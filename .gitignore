@@ -1,0 +1,9 @@
+# Ignore training data
+data/
+*.csv
+*.json
+*.tfrecord
+*.h5
+*.npy
+*.pth
+*.pt
