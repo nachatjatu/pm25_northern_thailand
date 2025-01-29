@@ -1,5 +1,7 @@
 # Ignore training data
 data/
+slides/
+CS 195.code-workspace
 *.csv
 *.json
 *.tfrecord
@@ -7,3 +9,4 @@ data/
 *.npy
 *.pth
 *.pt
+.DS_Store
