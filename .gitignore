@@ -10,3 +10,6 @@ CS 195.code-workspace
 *.pth
 *.pt
 **/.DS_Store
+lightning_logs/
+nachatj@rice.stanford.edu/
+src/PM25UNet_old.py
