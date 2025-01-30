@@ -9,4 +9,4 @@ CS 195.code-workspace
 *.npy
 *.pth
 *.pt
-.DS_Store
+*.DS_Store
