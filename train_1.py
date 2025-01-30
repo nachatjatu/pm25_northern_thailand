@@ -1,4 +1,5 @@
 import os
+import math
 
 import lightning as L
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     mean, std = ComputeStatistics(train_path).compute_mean_std()
     mean[4], std[4] = 0, 1
     to_tensor = PM25Transforms.ToTensor()
-    normalize = transforms.normalize(mean, std)
+    normalize = transforms.Normalize(mean, std)
     transform = transforms.Compose([to_tensor, normalize])
 
     # create Datasets
@@ -47,11 +48,21 @@ if __name__ == '__main__':
         val_dataset, sampler = val_sampler, batch_size = args.batch_size)
 
     # set up model and Lightning trainer
+    def kaiming_init(model):
+        for name, param in model.named_parameters():
+            if name.endswith(".bias"):
+                param.data.fill_(0)
+            elif name.startswith("layers.0"):  # The first layer does not have ReLU applied on its input
+                param.data.normal_(0, 1 / math.sqrt(param.shape[1]))
+            else:
+                param.data.normal_(0, math.sqrt(2) / math.sqrt(param.shape[1]))
     model = PM25UNet(6, 1)
-    trainer = L.Trainer(max_epochs=50, 
+    # kaiming_init(model)
+    
+    trainer = L.Trainer(max_epochs=args.epochs, 
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",
-                                                 divergence_threshold=1e9)]
+                                                 divergence_threshold=1e9),]
     )
     
     # train and validate model
@@ -60,3 +71,5 @@ if __name__ == '__main__':
         train_dataloaders=train_dataloader, 
         val_dataloaders = val_dataloader
     )
+
+    trainer.save_checkpoint(os.path.join(cwd, 'checkpoints'))

@@ -2,6 +2,7 @@ import torch
 from torch import nn, optim
 import lightning as L
 import argparse
+import torchvision
 
 
 class PM25ArgParser:
@@ -11,7 +12,7 @@ class PM25ArgParser:
                                  help='Number of training epochs')
         self.parser.add_argument("--n_workers", type=int, default=0, 
                                  help="Number of workers")
-        self.parser.add_argument("--batch_size", type=int, default=16, 
+        self.parser.add_argument("--batch_size", type=int, default=8, 
                                  help="Batch size")
         self.parser.add_argument("--lr", type=float, default=0.001, 
                                  help="Learning rate")
@@ -220,14 +221,14 @@ class PM25UNet(L.LightningModule):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, prog_bar=True, on_epoch=True)
         return loss
     
-    def validation_step(self, batch, _):
+    def validation_step(self, batch, idx):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.log("val_loss", loss)
+        self.log("val_loss", loss, prog_bar=True, on_epoch=True)
     
     def test_step(self, batch, _):
         input_bands, true_pm25 = batch
