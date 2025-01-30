@@ -12,6 +12,7 @@ from torchgeo.samplers import PreChippedGeoSampler
 from torch.utils.data import DataLoader
 
 from src.PM25UNet import PM25UNet, PM25ArgParser
+from lightning.pytorch.loggers import TensorBoardLogger
 
 
 if __name__ == '__main__':
@@ -58,8 +59,12 @@ if __name__ == '__main__':
                 param.data.normal_(0, math.sqrt(2) / math.sqrt(param.shape[1]))
     model = PM25UNet(6, 1)
     # kaiming_init(model)
+
+    log_dir = '$SCRATCH/logs'
+    logger = TensorBoardLogger(log_dir)
     
     trainer = L.Trainer(max_epochs=args.epochs, 
+                        logger=logger,
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",
                                                  divergence_threshold=1e9),]
