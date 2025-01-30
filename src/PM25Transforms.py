@@ -1,21 +1,6 @@
 import random
 import torch
 
-class RandomCompose:
-    """Performs transformations in random order
-
-    Attributes:
-        transforms (list):  list of transformations to perform
-    """
-    def __init__(self, transforms):
-        self.transforms = transforms
-
-    def __call__(self, tensor):
-        order = random.sample(self.transforms, len(self.transforms))
-        for transform in order:
-            tensor = transform(tensor)
-        return tensor
-
 
 class ToTensor:
     """Extracts image tensor from a GeoSampler sample dict 
