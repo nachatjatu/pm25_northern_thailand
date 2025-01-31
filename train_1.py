@@ -10,7 +10,6 @@ from src.PM25Stats import PM25Stats
 from torchgeo.samplers import PreChippedGeoSampler
 from torch.utils.data import DataLoader
 from src.PM25Transforms import RandomFlip, RandomRotate
-
 from src.PM25UNet import PM25UNet, PM25ArgParser
 
 def main():
@@ -56,7 +55,7 @@ def main():
     print('Initializing model and trainer...')
     model = PM25UNet(6, 1)
 
-    trainer = L.Trainer(max_epochs=args.epochs, 
+    trainer = L.Trainer(max_epochs=args.epochs,
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",
                                                  divergence_threshold=1e9)]

@@ -2,6 +2,7 @@ import torch
 from torch import nn, optim
 import lightning as L
 import argparse
+from torch.optim.lr_scheduler import LinearLR
 
 
 class PM25ArgParser:
@@ -223,6 +224,8 @@ class PM25UNet(L.LightningModule):
                 nn.init.zeros_(m.bias)
 
     def training_step(self, batch, _):
+        if self.trainer.is_last_batch:
+            print(self.trainer.optimizers[0].param_groups[0]['lr'])
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
@@ -243,5 +246,17 @@ class PM25UNet(L.LightningModule):
     
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.lr)
-        return optimizer
+
+        warmup_scheduler = LinearLR(
+            optimizer, start_factor=0.1, end_factor=1.0, total_iters=10
+        )
+
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": warmup_scheduler,
+                "interval": "epoch",  # Step the scheduler every epoch
+                "frequency": 1,  # Apply it every epoch
+            },
+        }
     
