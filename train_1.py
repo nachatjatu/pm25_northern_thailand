@@ -54,16 +54,17 @@ def main():
     # set up model and Lightning trainer
     print('Initializing model and trainer...')
     model = PM25UNet(6, 1)
-    logger = TensorBoardLogger(args.log_path)
     
     trainer = L.Trainer(max_epochs=args.epochs, 
-                        logger=logger,
-                        default_root_dir=args.save_path,
+                        limit_train_batches=10,
+                        limit_val_batches=10,
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",
                                                  divergence_threshold=1e9)]
     )
     
+    print(trainer.default_root_dir)
+
     # train and validate model
     print('Begin training...')
     trainer.fit(
