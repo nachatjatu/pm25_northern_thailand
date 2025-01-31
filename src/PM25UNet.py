@@ -10,7 +10,7 @@ class PM25ArgParser:
         self.parser = argparse.ArgumentParser(description="PM2.5 UNet ArgParser")
         self.parser.add_argument('--epochs', type=int, default=50, 
                                  help='Number of training epochs')
-        self.parser.add_argument("--n_workers", type=int, default=0, 
+        self.parser.add_argument("--num_workers", type=int, default=0, 
                                  help="Number of workers")
         self.parser.add_argument("--batch_size", type=int, default=8, 
                                  help="Batch size")
