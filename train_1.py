@@ -56,14 +56,10 @@ def main():
     model = PM25UNet(6, 1)
     
     trainer = L.Trainer(max_epochs=args.epochs, 
-                        limit_train_batches=10,
-                        limit_val_batches=10,
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",
                                                  divergence_threshold=1e9)]
     )
-    
-    print(trainer.default_root_dir)
 
     # train and validate model
     print('Begin training...')
