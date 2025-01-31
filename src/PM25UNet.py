@@ -14,7 +14,7 @@ class PM25ArgParser:
                                  help="Number of workers")
         self.parser.add_argument("--batch_size", type=int, default=8, 
                                  help="Batch size")
-        self.parser.add_argument("--lr", type=float, default=0.001, 
+        self.parser.add_argument("--lr", type=float, default=0.0001, 
                                  help="Learning rate")
         self.parser.add_argument("--data_path", type=str, default="./data/dataset_1", 
                                  help="Path to dataset")
@@ -192,7 +192,9 @@ class PM25UNet(L.LightningModule):
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)         
         self.down3 = DownBlock(128, 256)
-        self.bottleneck = BottleneckBlock(256, 512)
+        self.down4 = DownBlock(256, 512)
+        self.bottleneck = BottleneckBlock(512, 1024)
+        self.up4 = UpBlock(1024, 512)
         self.up3 = UpBlock(512, 256)
         self.up2 = UpBlock(256, 128)
         self.up1 = UpBlock(128, 64)
@@ -205,12 +207,14 @@ class PM25UNet(L.LightningModule):
         x1_conv, x1_down = self.down1(x)
         x2_conv, x2_down = self.down2(x1_down)
         x3_conv, x3_down = self.down3(x2_down)
+        x4_conv, x4_down = self.down3(x3_down)
 
         # pass image through bottleneck block
-        x_bottleneck = self.bottleneck(x3_down)
+        x_bottleneck = self.bottleneck(x4_down)
 
         # pass image through upsampling blocks, maintaining skip connections
-        x3_up = self.up3(x_bottleneck, x3_conv)
+        x4_up = self.up4(x_bottleneck, x4_conv)
+        x3_up = self.up3(x4_up, x3_conv)
         x2_up = self.up2(x3_up, x2_conv)
         x1_up = self.up1(x2_up, x1_conv)
 
@@ -229,14 +233,14 @@ class PM25UNet(L.LightningModule):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.log("train_loss", loss, prog_bar=True, on_epoch=True)
+        self.log("train_loss", loss, on_epoch=True)
         return loss
     
     def validation_step(self, batch, idx):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.log("val_loss", loss, prog_bar=True, on_epoch=True)
+        self.log("val_loss", loss, on_epoch=True)
     
     def test_step(self, batch, _):
         input_bands, true_pm25 = batch
