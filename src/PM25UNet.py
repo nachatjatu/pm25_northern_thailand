@@ -207,7 +207,7 @@ class PM25UNet(L.LightningModule):
         x1_conv, x1_down = self.down1(x)
         x2_conv, x2_down = self.down2(x1_down)
         x3_conv, x3_down = self.down3(x2_down)
-        x4_conv, x4_down = self.down3(x3_down)
+        x4_conv, x4_down = self.down4(x3_down)
 
         # pass image through bottleneck block
         x_bottleneck = self.bottleneck(x4_down)
