@@ -24,21 +24,21 @@ def main():
     val_path = os.path.join(args.data_path, 'val')
 
     # set up transformations
-    print('Computing band statistics...')
-    mean, std = PM25Stats(train_path, args.batch_size, args.num_workers).compute_statistics()
-    print(f'mean: {mean}')
-    print(f'std: {std}')
+    # print('Computing band statistics...')
+    # mean, std = PM25Stats(train_path, args.batch_size, args.num_workers).compute_statistics()
+    # print(f'mean: {mean}')
+    # print(f'std: {std}')
 
     print('Setting up transformations...')
     to_tensor = PM25Transforms.ToTensor()
-    normalize = transforms.Normalize(mean, std)
+    # normalize = transforms.Normalize(mean, std)
     flip = RandomFlip()
     rotate = RandomRotate()
 
     # create Datasets, GeoSamplers, DataLoaders
     print('Initializing datasets, samplers, and dataloaders...')
-    train_dataset = PM25Dataset(train_path, transforms=transforms.Compose([to_tensor, normalize, flip, rotate]))
-    val_dataset = PM25Dataset(val_path, transforms=transforms.Compose([to_tensor, normalize]))
+    train_dataset = PM25Dataset(train_path, transforms=transforms.Compose([to_tensor, flip, rotate]))
+    val_dataset = PM25Dataset(val_path, transforms=transforms.Compose([to_tensor]))
 
     train_sampler = PreChippedGeoSampler(train_dataset, shuffle=True)
     val_sampler = PreChippedGeoSampler(val_dataset, shuffle=False)
@@ -57,7 +57,7 @@ def main():
     trainer = L.Trainer(max_epochs=args.epochs,
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",
-                                                 patience=5,
+                                                 patience=7,
                                                  divergence_threshold=1e9)]
     )
 
