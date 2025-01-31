@@ -9,6 +9,7 @@ from src.PM25Dataset import PM25Dataset
 from src.PM25Stats import PM25Stats
 from torchgeo.samplers import PreChippedGeoSampler
 from torch.utils.data import DataLoader
+from src.PM25Transforms import RandomFlip, RandomRotate
 
 from src.PM25UNet import PM25UNet, PM25ArgParser
 
@@ -32,7 +33,9 @@ def main():
     print('Setting up transformations...')
     to_tensor = PM25Transforms.ToTensor()
     normalize = transforms.Normalize(mean, std)
-    transform = transforms.Compose([to_tensor, normalize])
+    flip = RandomFlip()
+    rotate = RandomRotate()
+    transform = transforms.Compose([to_tensor, normalize, flip, rotate])
 
     # create Datasets, GeoSamplers, DataLoaders
     print('Initializing datasets, samplers, and dataloaders...')
