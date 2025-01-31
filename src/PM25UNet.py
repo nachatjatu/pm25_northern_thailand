@@ -190,34 +190,30 @@ class PM25UNet(L.LightningModule):
         self.loss_fn = loss_fn if loss_fn else nn.MSELoss()
 
         self.down1 = DownBlock(in_channels, 64) 
-        self.down2 = DownBlock(64, 128)         
-        self.bottleneck = BottleneckBlock(128, 256)
+        self.down2 = DownBlock(64, 128)
+        self.down3 = DownBlock(128, 256)         
+        self.bottleneck = BottleneckBlock(256, 512)
+        self.up3 = UpBlock(512, 256)
         self.up2 = UpBlock(256, 128)
         self.up1 = UpBlock(128, 64)
         self.out = nn.Conv2d(64, out_channels, kernel_size = 1)
-
-        self.apply(self.init_weights)
 
     def forward(self, x):
         # pass image through downsampling blocks, retaining skip connections
         x1_conv, x1_down = self.down1(x)
         x2_conv, x2_down = self.down2(x1_down)
+        x3_conv, x3_down = self.down3(x2_down)
 
         # pass image through bottleneck block
-        x_bottleneck = self.bottleneck(x2_down)
+        x_bottleneck = self.bottleneck(x3_down)
 
         # pass image through upsampling blocks, maintaining skip connections
-        x2_up = self.up2(x_bottleneck, x2_conv)
+        x3_up = self.up2(x_bottleneck, x3_conv)
+        x2_up = self.up2(x3_up, x2_conv)
         x1_up = self.up1(x2_up, x1_conv)
 
         # pass image through output layer and return
         return self.out(x1_up)
-    
-    def init_weights(self, m):
-        if isinstance(m, nn.Conv2d):
-            nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            if m.bias is not None:
-                nn.init.zeros_(m.bias)
 
     def training_step(self, batch, _):
         if self.trainer.is_last_batch:
@@ -225,14 +221,14 @@ class PM25UNet(L.LightningModule):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.log("train_loss", loss, on_epoch=True)
+        self.log("train_loss", loss, prog_bar=True, on_epoch=True)
         return loss
     
-    def validation_step(self, batch, idx):
+    def validation_step(self, batch, _):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.log("val_loss", loss, on_epoch=True)
+        self.log("val_loss", loss, prog_bar=True, on_epoch=True)
     
     def test_step(self, batch, _):
         input_bands, true_pm25 = batch
