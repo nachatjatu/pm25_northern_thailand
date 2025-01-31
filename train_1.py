@@ -12,7 +12,6 @@ from torch.utils.data import DataLoader
 
 from src.PM25UNet import PM25UNet, PM25ArgParser
 
-
 def main():
     # argument parsing for SLURM
     print('Parsing arguments...')
@@ -53,7 +52,7 @@ def main():
     # set up model and Lightning trainer
     print('Initializing model and trainer...')
     model = PM25UNet(6, 1)
-    
+
     trainer = L.Trainer(max_epochs=args.epochs, 
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",

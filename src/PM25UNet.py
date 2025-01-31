@@ -197,6 +197,8 @@ class PM25UNet(L.LightningModule):
         self.up1 = UpBlock(128, 64)
         self.out = nn.Conv2d(64, out_channels, kernel_size = 1)
 
+        self.apply(self.init_weights)
+
     def forward(self, x):
         # pass image through downsampling blocks, retaining skip connections
         x1_conv, x1_down = self.down1(x)
@@ -214,6 +216,12 @@ class PM25UNet(L.LightningModule):
         # pass image through output layer and return
         return self.out(x1_up)
     
+    def init_weights(self, m):
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
+
     def training_step(self, batch, _):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
