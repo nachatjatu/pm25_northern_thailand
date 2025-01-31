@@ -11,7 +11,6 @@ from torchgeo.samplers import PreChippedGeoSampler
 from torch.utils.data import DataLoader
 
 from src.PM25UNet import PM25UNet, PM25ArgParser
-from lightning.pytorch.loggers import TensorBoardLogger
 
 
 def main():
