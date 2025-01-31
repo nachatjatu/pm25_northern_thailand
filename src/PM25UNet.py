@@ -15,10 +15,12 @@ class PM25ArgParser:
                                  help="Batch size")
         self.parser.add_argument("--lr", type=float, default=0.001, 
                                  help="Learning rate")
-        self.parser.add_argument("--data_path", type=str, default="./data", 
+        self.parser.add_argument("--data_path", type=str, default="./data/dataset_1", 
                                  help="Path to dataset")
-        self.parser.add_argument("--save_path", type=str, default="./checkpoints", 
+        self.parser.add_argument("--save_path", type=str, default="$SCRATCH/checkpoints", 
                                  help="Path to save model")        
+	self.parser.add_argument("--log_path", type=str, default="$SCRATCH",
+				help="Path to log data")
 
     def parse_args(self):
         return self.parser.parse_args()

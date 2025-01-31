@@ -54,8 +54,7 @@ def main():
     # set up model and Lightning trainer
     print('Initializing model and trainer...')
     model = PM25UNet(6, 1)
-    log_dir = '$SCRATCH/logs'
-    logger = TensorBoardLogger(log_dir)
+    logger = TensorBoardLogger(args.log_path)
     
     trainer = L.Trainer(max_epochs=args.epochs, 
                         logger=logger,
