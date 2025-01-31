@@ -11,7 +11,7 @@ class PM25Stats:
         self.num_workers = num_workers
 
     def compute_statistics(self):
-        train_dataset = PM25Dataset(self.train_path, transforms=ToTensor)
+        train_dataset = PM25Dataset(self.train_path, transforms=ToTensor())
         train_sampler = PreChippedGeoSampler(train_dataset)
         train_dataloader = DataLoader(
             train_dataset, sampler=train_sampler, 
