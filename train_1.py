@@ -34,12 +34,11 @@ def main():
     normalize = transforms.Normalize(mean, std)
     flip = RandomFlip()
     rotate = RandomRotate()
-    transform = transforms.Compose([to_tensor, normalize, flip, rotate])
 
     # create Datasets, GeoSamplers, DataLoaders
     print('Initializing datasets, samplers, and dataloaders...')
-    train_dataset = PM25Dataset(train_path, transforms=transform)
-    val_dataset = PM25Dataset(val_path, transforms=transform)
+    train_dataset = PM25Dataset(train_path, transforms=transforms.Compose([to_tensor, normalize, flip, rotate]))
+    val_dataset = PM25Dataset(val_path, transforms=transforms.Compose([to_tensor, normalize]))
 
     train_sampler = PreChippedGeoSampler(train_dataset, shuffle=True)
     val_sampler = PreChippedGeoSampler(val_dataset, shuffle=False)
@@ -58,6 +57,7 @@ def main():
     trainer = L.Trainer(max_epochs=args.epochs,
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",
+                                                 patience=5,
                                                  divergence_threshold=1e9)]
     )
 
