@@ -5,7 +5,7 @@ import torch
 import lightning as L
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
-from src.compute_statistics import ComputeStatistics
+from src.PM25Stats import PM25Stats
 import src.PM25Transforms as PM25Transforms
 import torchvision.transforms as transforms
 from src.PM25Dataset import PM25Dataset
@@ -21,10 +21,12 @@ folder = os.path.join(cwd, 'data/dataset_1')
 train_path = os.path.join(folder, 'train')
 val_path = os.path.join(folder, 'val')
 
-model = PM25UNet.load_from_checkpoint(os.path.join(cwd, 'checkpoints/tmpf127_fzk'), in_channels=6, out_channels=1,map_location=torch.device('cpu'))
+model = PM25UNet.load_from_checkpoint(
+    os.path.join(cwd, 'checkpoints/tmpf127_fzk'), 
+    in_channels=6, out_channels=1,map_location=torch.device('cpu'))
 
 # set up transformations
-mean, std = ComputeStatistics(train_path).compute_mean_std()
+mean, std = PM25Stats(train_path, 1, 0).compute_statistics()
 mean[4], std[4] = 0, 1
 to_tensor = PM25Transforms.ToTensor()
 normalize = transforms.Normalize(mean, std)

@@ -2,7 +2,6 @@ import torch
 from torch import nn, optim
 import lightning as L
 import argparse
-import torchvision
 
 
 class PM25ArgParser:
