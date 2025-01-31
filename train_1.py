@@ -16,32 +16,34 @@ from lightning.pytorch.loggers import TensorBoardLogger
 
 def main():
     # argument parsing for SLURM
+    print('Parsing arguments...')
     parser = PM25ArgParser()
     args = parser.parse_args()
 
     # set up folder paths
+    print('Setting up folder paths...')
     train_path = os.path.join(args.data_path, 'train')
     val_path = os.path.join(args.data_path, 'val')
 
     # set up transformations
-    to_tensor = PM25Transforms.ToTensor()
+    print('Computing band statistics...')
     mean, std = PM25Stats(train_path, args.batch_size, args.num_workers).compute_statistics()
-
     print(f'mean: {mean}')
     print(f'std: {std}')
 
+    print('Setting up transformations...')
+    to_tensor = PM25Transforms.ToTensor()
     normalize = transforms.Normalize(mean, std)
     transform = transforms.Compose([to_tensor, normalize])
 
-    # create Datasets
+    # create Datasets, GeoSamplers, DataLoaders
+    print('Initializing datasets, samplers, and dataloaders...')
     train_dataset = PM25Dataset(train_path, transforms=transform)
     val_dataset = PM25Dataset(val_path, transforms=transform)
 
-    # create GeoSamplers
     train_sampler = PreChippedGeoSampler(train_dataset, shuffle=True)
     val_sampler = PreChippedGeoSampler(val_dataset, shuffle=False)
 
-    # create DataLoaders
     train_dataloader = DataLoader(
         train_dataset, sampler=train_sampler, 
         batch_size=args.batch_size, num_workers=args.num_workers)
@@ -50,8 +52,8 @@ def main():
         batch_size=args.batch_size, num_workers=args.num_workers)
 
     # set up model and Lightning trainer
+    print('Initializing model and trainer...')
     model = PM25UNet(6, 1)
-
     log_dir = '$SCRATCH/logs'
     logger = TensorBoardLogger(log_dir)
     
@@ -63,6 +65,7 @@ def main():
     )
     
     # train and validate model
+    print('Begin training...')
     trainer.fit(
         model=model, 
         train_dataloaders=train_dataloader, 
