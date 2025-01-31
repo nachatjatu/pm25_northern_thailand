@@ -58,9 +58,10 @@ def main():
     
     trainer = L.Trainer(max_epochs=args.epochs, 
                         logger=logger,
+                        default_root_dir=args.save_path,
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",
-                                                 divergence_threshold=1e9),]
+                                                 divergence_threshold=1e9)]
     )
     
     # train and validate model
@@ -71,9 +72,7 @@ def main():
         val_dataloaders = val_dataloader
     )
 
-    trainer.save_checkpoint(args.save_path)
 
-    return 0
 
 if __name__ == '__main__':
     main()
