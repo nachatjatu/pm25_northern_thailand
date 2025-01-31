@@ -184,7 +184,7 @@ class PM25UNet(L.LightningModule):
         validation_step(self, batch, _): Performs one step in the val loop
         test_step(self, batch, _): Performs one step in the testing loop
     """
-    def __init__(self, in_channels, out_channels, lr=1e-3, loss_fn=None):
+    def __init__(self, in_channels, out_channels, lr=1e-4, loss_fn=None):
         super(PM25UNet, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn if loss_fn else nn.MSELoss()

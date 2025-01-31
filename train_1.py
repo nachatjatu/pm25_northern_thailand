@@ -52,7 +52,7 @@ def main():
 
     # set up model and Lightning trainer
     print('Initializing model and trainer...')
-    model = PM25UNet(6, 1)
+    model = PM25UNet(6, 1, args.lr)
 
     trainer = L.Trainer(max_epochs=args.epochs,
                         callbacks=[EarlyStopping(monitor="val_loss", 
