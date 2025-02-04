@@ -208,7 +208,7 @@ class PM25UNet(L.LightningModule):
         x_bottleneck = self.bottleneck(x3_down)
 
         # pass image through upsampling blocks, maintaining skip connections
-        x3_up = self.up2(x_bottleneck, x3_conv)
+        x3_up = self.up3(x_bottleneck, x3_conv)
         x2_up = self.up2(x3_up, x2_conv)
         x1_up = self.up1(x2_up, x1_conv)
 
