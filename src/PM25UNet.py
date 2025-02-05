@@ -36,7 +36,7 @@ class DownBlock(nn.Module):
     Methods:
         forward(x): passes input through DownBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, dropout=0.1):
         """Initializes DownBlock
 
         Args:
@@ -48,9 +48,11 @@ class DownBlock(nn.Module):
             nn.Conv2d(in_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
             nn.ReLU(inplace = True),
+            nn.Dropout2d(dropout),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
-            nn.ReLU(inplace = True)
+            nn.ReLU(inplace = True),
+            nn.Dropout2d(dropout)
         )
         self.pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
 
@@ -83,7 +85,7 @@ class BottleneckBlock(nn.Module):
     Methods:
         forward(x): passes input through BottleneckBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, dropout=0.1):
         """Initializes BottleneckBlock
 
         Args:
@@ -95,9 +97,11 @@ class BottleneckBlock(nn.Module):
             nn.Conv2d(in_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
             nn.ReLU(inplace = True),
+            nn.Dropout2d(dropout),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
-            nn.ReLU(inplace = True)
+            nn.ReLU(inplace = True),
+            nn.Dropout2d(dropout)
         )
     
     def forward(self, x):
@@ -128,7 +132,7 @@ class UpBlock(nn.Module):
     Methods:
         forward(x, skip): Passes inputs through UpBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, dropout=0.1):
         """Initializes UpBlock
 
         Args:
@@ -142,9 +146,11 @@ class UpBlock(nn.Module):
             nn.Conv2d(in_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
             nn.ReLU(inplace = True),
+            nn.Dropout2d(dropout),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
-            nn.ReLU(inplace = True)
+            nn.ReLU(inplace = True),
+            nn.Dropout2d(dropout)
         )
 
     def forward(self, x, skip):
@@ -190,13 +196,13 @@ class PM25UNet(L.LightningModule):
         self.loss_fn = loss_fn if loss_fn else nn.MSELoss()
 
         print(f'Using learning rate {self.lr}')
-        print(f'Using loss_fn {self.oss_fn}')
+        print(f'Using loss_fn {self.loss_fn}')
 
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)
         self.down3 = DownBlock(128, 256)       
         self.down4 = DownBlock(256, 512) 
-        self.bottleneck = BottleneckBlock(256, 512)
+        self.bottleneck = BottleneckBlock(512, 1024)
         self.up4 = UpBlock(1024, 512)
         self.up3 = UpBlock(512, 256)
         self.up2 = UpBlock(256, 128)
@@ -223,8 +229,6 @@ class PM25UNet(L.LightningModule):
         return self.out(x1_up)
 
     def training_step(self, batch, _):
-        if self.trainer.is_last_batch:
-            print(self.trainer.optimizers[0].param_groups[0]['lr'])
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
