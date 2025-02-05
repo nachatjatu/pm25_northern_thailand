@@ -2,7 +2,6 @@ import torch
 from torch import nn, optim
 import lightning as L
 import argparse
-from torch.optim.lr_scheduler import LinearLR
 
 
 class PM25ArgParser:
@@ -36,7 +35,7 @@ class DownBlock(nn.Module):
     Methods:
         forward(x): passes input through DownBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels, dropout=0.2):
+    def __init__(self, in_channels, out_channels, dropout=0.1):
         """Initializes DownBlock
 
         Args:
@@ -83,7 +82,7 @@ class BottleneckBlock(nn.Module):
     Methods:
         forward(x): passes input through BottleneckBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels, dropout=0.3):
+    def __init__(self, in_channels, out_channels, dropout=0.1):
         """Initializes BottleneckBlock
 
         Args:
