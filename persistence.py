@@ -17,7 +17,7 @@ def main():
 
     print('Setting up folder paths...')
     train_path = os.path.join(args.data_path, 'train')
-    val_path = os.path.join(args.data_path, 'train')
+    val_path = os.path.join(args.data_path, 'val')
 
 
     print('Computing band statistics...')
