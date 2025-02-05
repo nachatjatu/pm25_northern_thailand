@@ -36,7 +36,7 @@ class DownBlock(nn.Module):
     Methods:
         forward(x): passes input through DownBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels, dropout=0.1):
+    def __init__(self, in_channels, out_channels, dropout=0.2):
         """Initializes DownBlock
 
         Args:
@@ -50,9 +50,7 @@ class DownBlock(nn.Module):
             nn.ReLU(inplace = True),
             nn.Dropout2d(dropout),
             nn.Conv2d(out_channels, out_channels, 
-                      kernel_size = 3, padding = 'same'),
-            nn.ReLU(inplace = True),
-            nn.Dropout2d(dropout)
+                      kernel_size = 3, padding = 'same')
         )
         self.pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
 
@@ -85,7 +83,7 @@ class BottleneckBlock(nn.Module):
     Methods:
         forward(x): passes input through BottleneckBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels, dropout=0.1):
+    def __init__(self, in_channels, out_channels, dropout=0.3):
         """Initializes BottleneckBlock
 
         Args:
@@ -150,7 +148,6 @@ class UpBlock(nn.Module):
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
             nn.ReLU(inplace = True),
-            nn.Dropout2d(dropout)
         )
 
     def forward(self, x, skip):
