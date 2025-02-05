@@ -11,6 +11,7 @@ from torchgeo.samplers import PreChippedGeoSampler
 from torch.utils.data import DataLoader
 from src.PM25Transforms import RandomFlip, RandomRotate
 from src.PM25UNet import PM25UNet, PM25ArgParser
+from torch.nn import SmoothL1Loss
 
 def main():
     # argument parsing for SLURM
@@ -64,7 +65,8 @@ def main():
 
     # set up model and Lightning trainer
     print('Initializing model and trainer...')
-    model = PM25UNet(6, 1, args.lr)
+    loss_fn = SmoothL1Loss(beta=1.0)
+    model = PM25UNet(6, 1, args.lr, loss_fn)
 
     trainer = L.Trainer(max_epochs=args.epochs,
                         callbacks=[EarlyStopping(monitor="val_loss", 

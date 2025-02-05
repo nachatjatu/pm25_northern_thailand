@@ -10,6 +10,7 @@ from torchgeo.samplers import PreChippedGeoSampler
 from torch.utils.data import DataLoader
 
 from src.PM25UNet import PM25UNet, PM25ArgParser
+from src.PM25SimpleConv import PM25SimpleConv
 import matplotlib.pyplot as plt
 
 # set up folder paths
@@ -18,9 +19,9 @@ folder = os.path.join(cwd, 'data/dataset_2')
 train_path = os.path.join(folder, 'train')
 val_path = os.path.join(folder, 'val')
 
-# model = PM25UNet.load_from_checkpoint(
-#     os.path.join(cwd, 'version_59159698/checkpoints/epoch=34-step=2800.ckpt'), 
-#     in_channels=6, out_channels=1,map_location=torch.device('cpu'))
+model = PM25SimpleConv.load_from_checkpoint(
+    os.path.join(cwd, 'lightning_logs/version_59373491/checkpoints/epoch=36-step=10323.ckpt'), 
+    in_channels=6, out_channels=1,map_location=torch.device('cpu'))
 
 # set up transformations
 mean, std, min, max = PM25Stats(train_path, 1, 0).compute_statistics()
@@ -44,29 +45,32 @@ print('min:', min)
 print('max:', max)
 
 # # create Datasets
-# val_dataset = PM25Dataset(val_path, transforms=transform)
+val_dataset = PM25Dataset(val_path, transforms=transform)
 
 # # create GeoSamplers
-# val_sampler = PreChippedGeoSampler(val_dataset, shuffle = False)
+val_sampler = PreChippedGeoSampler(val_dataset, shuffle = False)
 
-# # create DataLoaders
-# val_dataloader = DataLoader(
-#     val_dataset, sampler = val_sampler, batch_size = 1)
+# create DataLoaders
+val_dataloader = DataLoader(
+    val_dataset, sampler = val_sampler, batch_size = 1)
 
-# for input_bands, ground_truth in val_dataloader:
-#     predicted_image = model(input_bands)[0][0].detach().numpy()
-#     ground_truth_image = ground_truth[0][0].detach().numpy()
+for input_bands, ground_truth in val_dataloader:
+    predicted_image = model(input_bands)[0][0].detach().numpy()
 
-#     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+    ground_truth_image = ground_truth[0][0].detach().numpy()
 
-#     # Display the images
-#     axes[0].imshow(ground_truth_image, cmap='viridis')
-#     axes[0].set_title("Ground Truth")
-#     axes[0].axis('off')  # Hide axis
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
-#     axes[1].imshow(predicted_image, cmap='viridis')
-#     axes[1].set_title("Predicted")
-#     axes[1].axis('off')  # Hide axis
+    # Display the images
+    im1 = axes[0].imshow(ground_truth_image, cmap='viridis')
+    axes[0].set_title("Ground Truth")
+    axes[0].axis('off')  # Hide axis
+    cbar1 = fig.colorbar(im1, ax=axes[0], orientation='vertical')
 
-#     # Show the images side by side
-#     plt.show()
+    im2 = axes[1].imshow(predicted_image, cmap='viridis')
+    axes[1].set_title("Predicted")
+    axes[1].axis('off')  # Hide axis
+    cbar2 = fig.colorbar(im2, ax=axes[1], orientation='vertical')
+
+    # Show the images side by side
+    plt.show()
