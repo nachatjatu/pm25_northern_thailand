@@ -1,9 +1,8 @@
-import torch
 from torch import nn, optim
 import lightning as L
     
 
-class PM25FCN(L.LightningModule):
+class PM25SimpleConv(L.LightningModule):
     """
     A U-Net implementation for day-to-day PM2.5 image prediction using
     PyTorch Lightning.
@@ -22,19 +21,13 @@ class PM25FCN(L.LightningModule):
         test_step(self, batch, _): Performs one step in the testing loop
     """
     def __init__(self, in_channels, out_channels, lr=1e-4, loss_fn=None):
-        super(PM25FCN, self).__init__()
+        super(PM25SimpleConv, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn if loss_fn else nn.MSELoss()
-        self.conv_layers = nn.Sequential(
-            nn.Conv2d(in_channels, 64, kernel_size=3, padding='same'),
-            nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=3, padding='same'),
-            nn.ReLU(),
-            nn.Conv2d(128, out_channels, kernel_size=3, padding='same')
-        )
+        self.conv = nn.Conv2d(in_channels, out_channels, 1, bias=True)
 
     def forward(self, x):
-        return self.conv_layers(x)
+        return self.conv(x)
 
     def training_step(self, batch, _):
         if self.trainer.is_last_batch:

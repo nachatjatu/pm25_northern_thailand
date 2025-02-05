@@ -11,7 +11,7 @@ from torchgeo.samplers import PreChippedGeoSampler
 from torch.utils.data import DataLoader
 from src.PM25Transforms import RandomFlip, RandomRotate
 from src.PM25UNet import PM25ArgParser
-from src.PM25FCN import PM25FCN
+from PM25SimpleConv import PM25SimpleConv
 
 def main():
     # argument parsing for SLURM
@@ -65,7 +65,7 @@ def main():
 
     # set up model and Lightning trainer
     print('Initializing model and trainer...')
-    model = PM25FCN(6, 1, args.lr)
+    model = PM25SimpleConv(6, 1, args.lr)
 
     trainer = L.Trainer(max_epochs=args.epochs,
                         callbacks=[EarlyStopping(monitor="val_loss", 
