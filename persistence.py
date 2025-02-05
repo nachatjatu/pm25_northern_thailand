@@ -1,6 +1,6 @@
 import os
 
-
+from src.PM25Stats import PM25Stats
 import src.PM25Transforms as PM25Transforms
 import torchvision.transforms as transforms
 from src.PM25Dataset import PM25Dataset
@@ -16,12 +16,30 @@ def main():
     args = parser.parse_args()
 
     print('Setting up folder paths...')
+    train_path = os.path.join(args.data_path, 'train')
     val_path = os.path.join(args.data_path, 'val')
 
 
+    print('Computing band statistics...')
+    mean, std, min, max = PM25Stats(train_path, args.batch_size, args.num_workers).compute_statistics()
+    print(f'mean: {mean}')
+    print(f'std: {std}')
+    print(f'min: {min}')
+    print(f'max: {max}')
+
     print('Setting up transformations...')
     to_tensor = PM25Transforms.ToTensor()
-    transform = transforms.Compose([to_tensor])
+    normalize = PM25Transforms.Normalize(min, max, [4, 5])
+    standardize = PM25Transforms.Standardize(mean, std, [0, 1, 2, 3, 6])
+    transform = transforms.Compose([to_tensor, normalize, standardize])
+
+    print('Testing normalization and standardization')
+    mean, std, min, max = PM25Stats(train_path, args.batch_size, args.num_workers, transform).compute_statistics()
+    print(f'mean: {mean}')
+    print(f'std: {std}')
+    print(f'min: {min}')
+    print(f'max: {max}')
+
 
     print('Initializing datasets, samplers, and dataloaders...')
     val_dataset = PM25Dataset(val_path, transforms=transform)
