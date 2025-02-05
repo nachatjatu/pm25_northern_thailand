@@ -238,17 +238,18 @@ class PM25UNet(L.LightningModule):
     
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.lr)
+        return optimizer
 
-        warmup_scheduler = LinearLR(
-            optimizer, start_factor=0.1, end_factor=1.0, total_iters=10
-        )
+        # warmup_scheduler = LinearLR(
+        #     optimizer, start_factor=0.1, end_factor=1.0, total_iters=10
+        # )
 
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": warmup_scheduler,
-                "interval": "epoch",  # Step the scheduler every epoch
-                "frequency": 1,  # Apply it every epoch
-            },
-        }
+        # return {
+        #     "optimizer": optimizer,
+        #     "lr_scheduler": {
+        #         "scheduler": warmup_scheduler,
+        #         "interval": "epoch",  # Step the scheduler every epoch
+        #         "frequency": 1,  # Apply it every epoch
+        #     },
+        # }
     
