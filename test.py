@@ -15,13 +15,13 @@ import matplotlib.pyplot as plt
 
 # set up folder paths
 cwd = os.getcwd()
-folder = os.path.join(cwd, 'data/dataset_2')
+folder = os.path.join(cwd, 'data/dataset_1')
 train_path = os.path.join(folder, 'train')
 val_path = os.path.join(folder, 'val')
 
-model = PM25SimpleConv.load_from_checkpoint(
-    os.path.join(cwd, 'lightning_logs/version_59373491/checkpoints/epoch=36-step=10323.ckpt'), 
-    in_channels=6, out_channels=1,map_location=torch.device('cpu'))
+# model = PM25UNet.load_from_checkpoint(
+#     os.path.join(cwd, 'lightning_logs/version_59377634/checkpoints/epoch=39-step=11160.ckpt'), 
+#     in_channels=6, out_channels=1,map_location=torch.device('cpu'))
 
 # set up transformations
 mean, std, min, max = PM25Stats(train_path, 1, 0).compute_statistics()
@@ -55,7 +55,8 @@ val_dataloader = DataLoader(
     val_dataset, sampler = val_sampler, batch_size = 1)
 
 for input_bands, ground_truth in val_dataloader:
-    predicted_image = model(input_bands)[0][0].detach().numpy()
+    predicted_image = input_bands[0][0].detach().numpy()
+    # predicted_image = model(input_bands)[0][0].detach().numpy()
 
     ground_truth_image = ground_truth[0][0].detach().numpy()
 

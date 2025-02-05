@@ -8,7 +8,7 @@ from torchgeo.samplers import PreChippedGeoSampler
 from torch.utils.data import DataLoader
 from src.PM25UNet import PM25ArgParser
 import torch
-from sklearn.metrics import mean_squared_error
+import torch.nn as nn
 
 def main():
     print('Parsing arguments...')
@@ -50,16 +50,17 @@ def main():
         val_dataset, sampler=val_sampler,
         batch_size=args.batch_size, num_workers=args.num_workers)
 
-    mse_list = []
-
+    loss_list = []
+    loss_fn = nn.SmoothL1Loss(beta=1.0)
+    # loss_fn = nn.MSELoss()
     with torch.no_grad():  # No need for gradients
         for _, y_tomorrow in val_dataloader:
             y_pred_persistence = torch.zeros_like(y_tomorrow)
-            batch_mse = mean_squared_error(y_tomorrow.numpy().flatten(), y_pred_persistence.numpy().flatten())
-            mse_list.append(batch_mse)
+            batch_loss = loss_fn(y_tomorrow, y_pred_persistence)
+            loss_list.append(batch_loss)
 
-    final_mse = sum(mse_list) / len(mse_list)
-    print(f"Persistence Model Validation MSE: {final_mse:.4f}")
+    final_loss = sum(loss_list) / len(loss_list)
+    print(f"Persistence Model Validation Loss: {final_loss:.4f}")
 
 if __name__ == '__main__':
     main()

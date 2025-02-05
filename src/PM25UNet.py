@@ -189,15 +189,15 @@ class PM25UNet(L.LightningModule):
         self.lr = lr
         self.loss_fn = loss_fn if loss_fn else nn.MSELoss()
 
-        print(f'Using learning rate {lr}')
-        print(f'Using loss_fn {loss_fn}')
+        print(f'Using learning rate {self.lr}')
+        print(f'Using loss_fn {self.oss_fn}')
 
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)
         self.down3 = DownBlock(128, 256)       
-        # self.down4 = DownBlock(256, 512) 
+        self.down4 = DownBlock(256, 512) 
         self.bottleneck = BottleneckBlock(256, 512)
-        # self.up4 = UpBlock(1024, 512)
+        self.up4 = UpBlock(1024, 512)
         self.up3 = UpBlock(512, 256)
         self.up2 = UpBlock(256, 128)
         self.up1 = UpBlock(128, 64)
@@ -208,14 +208,14 @@ class PM25UNet(L.LightningModule):
         x1_conv, x1_down = self.down1(x)
         x2_conv, x2_down = self.down2(x1_down)
         x3_conv, x3_down = self.down3(x2_down)
-        # x4_conv, x4_down = self.down4(x3_down)
+        x4_conv, x4_down = self.down4(x3_down)
 
         # pass image through bottleneck block
-        x_bottleneck = self.bottleneck(x3_down)
+        x_bottleneck = self.bottleneck(x4_down)
 
         # pass image through upsampling blocks, maintaining skip connections
-        # x4_up = self.up4(x_bottleneck, x4_conv)
-        x3_up = self.up3(x_bottleneck, x3_conv)
+        x4_up = self.up4(x_bottleneck, x4_conv)
+        x3_up = self.up3(x4_up, x3_conv)
         x2_up = self.up2(x3_up, x2_conv)
         x1_up = self.up1(x2_up, x1_conv)
 
