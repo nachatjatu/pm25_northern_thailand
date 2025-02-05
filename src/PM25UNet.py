@@ -251,6 +251,7 @@ class PM25UNet(L.LightningModule):
                 "scheduler": scheduler,
                 "interval": "epoch",  # Step the scheduler every epoch
                 "frequency": 1,  # Apply it every epoch
+                "monitor": "val_loss"
             },
         }
     
