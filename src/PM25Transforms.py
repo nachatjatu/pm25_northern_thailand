@@ -1,6 +1,35 @@
 import random
 import torch
 
+class Standardize:
+    def __init__(self, mean, std, band_indices):
+        self.mean = mean
+        self.std = std
+        self.band_indices = band_indices
+    
+    def __call__(self, image):
+        standardized_image = image.clone()
+        band_indices = torch.tensor(self.band_indices, dtype=torch.long)
+        standardized_image[band_indices] = (
+            image[band_indices] - self.mean[band_indices, None, None]
+            ) / self.std[band_indices, None, None]
+        return standardized_image
+    
+
+class Normalize:
+    def __init__(self, min, max, band_indices):
+        self.min = min
+        self.max = max
+        self.band_indices = band_indices
+
+    def __call__(self, image):
+        normalized_image = image.clone()
+        band_indices = torch.tensor(self.band_indices, dtype=torch.long)
+        normalized_image[band_indices, :, :] = (
+            image[band_indices] - self.min[band_indices, None, None]
+            ) / (self.max[band_indices, None, None] - self.min[band_indices, None, None])
+        return normalized_image
+
 
 class ToTensor:
     """Extracts image tensor from a GeoSampler sample dict 

@@ -191,7 +191,7 @@ class PM25UNet(L.LightningModule):
 
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)
-        self.down3 = DownBlock(128, 256)         
+        self.down3 = DownBlock(128, 256)       
         self.bottleneck = BottleneckBlock(256, 512)
         self.up3 = UpBlock(512, 256)
         self.up2 = UpBlock(256, 128)

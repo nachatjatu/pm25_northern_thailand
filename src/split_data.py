@@ -6,7 +6,7 @@ random_state = 195
 
 # Define paths
 root = os.getcwd()
-path = 'data/dataset_1'
+path = 'data/dataset_2'
 input_folder = os.path.join(root, path)
 output_folder = input_folder
 

@@ -5,7 +5,7 @@ from pprint import pprint
 
 root = os.getcwd()
 
-folder = os.path.join(root, 'data/dataset_1')
+folder = os.path.join(root, 'data/dataset_2')
 
 files = [f for f in os.listdir(folder) if f.endswith('tif')]
 results = {}
