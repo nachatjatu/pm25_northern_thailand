@@ -66,7 +66,7 @@ def main():
     trainer = L.Trainer(max_epochs=args.epochs,
                         callbacks=[EarlyStopping(monitor="val_loss", 
                                                  mode="min",
-                                                 patience=3,
+                                                 patience=15,
                                                  divergence_threshold=1e9)]
     )
 
