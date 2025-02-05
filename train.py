@@ -23,6 +23,7 @@ def main():
     print('Setting up folder paths...')
     train_path = os.path.join(args.data_path, 'train')
     val_path = os.path.join(args.data_path, 'val')
+    print(f'Data from {args.data_path}')
 
     # set up transformations
     print('Computing band statistics...')

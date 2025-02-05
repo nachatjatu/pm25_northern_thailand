@@ -189,6 +189,9 @@ class PM25UNet(L.LightningModule):
         self.lr = lr
         self.loss_fn = loss_fn if loss_fn else nn.MSELoss()
 
+        print(f'Using learning rate {lr}')
+        print(f'Using loss_fn {loss_fn}')
+
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)
         self.down3 = DownBlock(128, 256)       
