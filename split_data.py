@@ -21,7 +21,7 @@ os.makedirs(test_dir, exist_ok=True)
 # Get list of all image files
 image_files = [f for f in os.listdir(input_folder) if f.lower().endswith((".tif"))]
 
-# Split the data (80% train, 10% validation, 10% test)
+# Split the data (70% train, 15% validation, 15% test)
 train_files, temp_files = train_test_split(image_files, test_size=0.2, random_state=195)
 val_files, test_files = train_test_split(temp_files, test_size=0.5, random_state=195)
 

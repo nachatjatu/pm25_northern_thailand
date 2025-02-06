@@ -1,25 +1,49 @@
 import torch
 from torch import nn, optim
 import lightning as L
-import argparse
+
+class Persistence(L.LightningModule):
+    def __init__(self, out_channels):
+        super(Persistence, self).__init__()
+        self.out_channels = out_channels
+        self.loss_fn = nn.MSELoss()
+
+    def forward(self, x):
+        return torch.zeros(x.shape[0], self.out_channels, x.shape[2], x.shape[3], device=x.device)
+    
+    def validation_step(self, batch, _):
+        input_bands, true_pm25 = batch
+        pred_pm25 = self(input_bands)
+        loss = self.loss_fn(pred_pm25, true_pm25)
+        self.log("val_loss", loss, on_epoch=True)
 
 
-class PM25ArgParser:
-    def __init__(self):
-        self.parser = argparse.ArgumentParser(description="PM2.5 UNet ArgParser")
-        self.parser.add_argument('--epochs', type=int, default=50, 
-                                 help='Number of training epochs')
-        self.parser.add_argument("--num_workers", type=int, default=0, 
-                                 help="Number of workers")
-        self.parser.add_argument("--batch_size", type=int, default=8, 
-                                 help="Batch size")
-        self.parser.add_argument("--lr", type=float, default=0.0001, 
-                                 help="Learning rate")
-        self.parser.add_argument("--data_path", type=str, default="./data/dataset_1", 
-                                 help="Path to dataset")
+class SimpleConv(L.LightningModule):
+    def __init__(self, in_channels, out_channels, lr, **kwargs):
+        super(SimpleConv, self).__init__()
+        self.lr = lr
+        self.loss_fn = nn.MSELoss()
+        self.conv = nn.Conv2d(in_channels, out_channels, 1, bias=True)
 
-    def parse_args(self):
-        return self.parser.parse_args()
+    def forward(self, x):
+        return self.conv(x)
+
+    def training_step(self, batch, _):
+        input_bands, true_pm25 = batch
+        pred_pm25 = self(input_bands)
+        loss = self.loss_fn(pred_pm25, true_pm25)
+        self.log("train_loss", loss, on_step=False, on_epoch=True)
+        return loss
+    
+    def validation_step(self, batch, _):
+        input_bands, true_pm25 = batch
+        pred_pm25 = self(input_bands)
+        loss = self.loss_fn(pred_pm25, true_pm25)
+        self.log("val_loss", loss, on_epoch=True)
+    
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.parameters(), lr=self.lr)
+        return optimizer
     
 
 class DownBlock(nn.Module):
@@ -168,7 +192,7 @@ class UpBlock(nn.Module):
         return x
     
 
-class PM25UNet(L.LightningModule):
+class UNet_v1(L.LightningModule):
     """
     A U-Net implementation for day-to-day PM2.5 image prediction using
     PyTorch Lightning.
@@ -186,10 +210,10 @@ class PM25UNet(L.LightningModule):
         validation_step(self, batch, _): Performs one step in the val loop
         test_step(self, batch, _): Performs one step in the testing loop
     """
-    def __init__(self, in_channels, out_channels, lr=1e-4, loss_fn=None):
-        super(PM25UNet, self).__init__()
+    def __init__(self, in_channels, out_channels, lr, **kwargs):
+        super(UNet_v1, self).__init__()
         self.lr = lr
-        self.loss_fn = loss_fn if loss_fn else nn.MSELoss()
+        self.loss_fn = nn.MSELoss()
 
         print(f'Using learning rate {self.lr}')
         print(f'Using loss_fn {self.loss_fn}')
@@ -228,7 +252,7 @@ class PM25UNet(L.LightningModule):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.log("train_loss", loss, on_epoch=True)
+        self.log("train_loss", loss, on_step=False, on_epoch=True)
         return loss
     
     def validation_step(self, batch, _):
@@ -237,24 +261,7 @@ class PM25UNet(L.LightningModule):
         loss = self.loss_fn(pred_pm25, true_pm25)
         self.log("val_loss", loss, on_epoch=True)
     
-    def test_step(self, batch, _):
-        input_bands, true_pm25 = batch
-        pred_pm25 = self(input_bands)
-        loss = self.loss_fn(pred_pm25, true_pm25)
-        self.log("test_loss", loss)
-    
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.lr)
-
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
-
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "interval": "epoch",  # Step the scheduler every epoch
-                "frequency": 1,  # Apply it every epoch
-                "monitor": "val_loss"
-            },
-        }
+        return optimizer
     

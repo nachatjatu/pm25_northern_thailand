@@ -25,7 +25,7 @@ class Normalize:
     def __call__(self, image):
         normalized_image = image.clone()
         band_indices = torch.tensor(self.band_indices, dtype=torch.long)
-        normalized_image[band_indices, :, :] = (
+        normalized_image[band_indices] = (
             image[band_indices] - self.min[band_indices, None, None]
             ) / (self.max[band_indices, None, None] - self.min[band_indices, None, None])
         return normalized_image

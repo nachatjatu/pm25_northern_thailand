@@ -1,90 +1,72 @@
-import os
-
 import lightning as L
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 
-import src.PM25Transforms as PM25Transforms
-import torchvision.transforms as transforms
-from src.PM25Dataset import PM25Dataset
-from src.PM25Stats import PM25Stats
-from torchgeo.samplers import PreChippedGeoSampler
-from torch.utils.data import DataLoader
-# from src.PM25Transforms import RandomFlip, RandomRotate
-from src.PM25UNet import PM25UNet, PM25ArgParser
-from torch.nn import SmoothL1Loss
+import src.Dataset as Dataset
 
-def main():
-    # argument parsing for SLURM
-    print('Parsing arguments...')
-    parser = PM25ArgParser()
-    args = parser.parse_args()
+import src.Models as Models
+from argparse import ArgumentParser
 
-    # set up folder paths
-    print('Setting up folder paths...')
-    train_path = os.path.join(args.data_path, 'train')
-    val_path = os.path.join(args.data_path, 'val')
-    print(f'Data from {args.data_path}')
+def main(args):
+    dict_args = vars(args)
 
-    # set up transformations
-    print('Computing band statistics...')
-    mean, std, min, max = PM25Stats(train_path, args.batch_size, args.num_workers).compute_statistics()
-    print(f'mean: {mean}')
-    print(f'std: {std}')
-    print(f'min: {min}')
-    print(f'max: {max}')
-
-    print('Setting up transformations...')
-    to_tensor = PM25Transforms.ToTensor()
-    normalize = PM25Transforms.Normalize(min, max, [4, 5])
-    standardize = PM25Transforms.Standardize(mean, std, [0, 1, 2, 3, 6])
-    # flip = RandomFlip()
-    # rotate = RandomRotate()
-    # train_transform = transforms.Compose([to_tensor, flip, rotate, normalize, standardize])
-    transform = transforms.Compose([to_tensor, normalize, standardize])
-
-    print('Testing normalization and standardization')
-    mean, std, min, max = PM25Stats(train_path, args.batch_size, args.num_workers, transform).compute_statistics()
-    print(f'mean: {mean}')
-    print(f'std: {std}')
-    print(f'min: {min}')
-    print(f'max: {max}')
-
-    # create Datasets, GeoSamplers, DataLoaders
-    print('Initializing datasets, samplers, and dataloaders...')
-    train_dataset = PM25Dataset(train_path, transforms=transform)
-    val_dataset = PM25Dataset(val_path, transforms=transform)
-
-    train_sampler = PreChippedGeoSampler(train_dataset, shuffle=True)
-    val_sampler = PreChippedGeoSampler(val_dataset, shuffle=False)
-
-    train_dataloader = DataLoader(
-        train_dataset, sampler=train_sampler, 
-        batch_size=args.batch_size, num_workers=args.num_workers)
-    val_dataloader = DataLoader(
-        val_dataset, sampler=val_sampler,
-        batch_size=args.batch_size, num_workers=args.num_workers)
-
-    # set up model and Lightning trainer
-    print('Initializing model and trainer...')
-    loss_fn = SmoothL1Loss(beta=1.0)
-    model = PM25UNet(6, 1, args.lr, loss_fn)
-
-    trainer = L.Trainer(max_epochs=args.epochs,
-                        callbacks=[EarlyStopping(monitor="val_loss", 
-                                                 mode="min",
-                                                 patience=15,
-                                                 divergence_threshold=1e9)]
+    # set up Lightning Trainer and callbacks
+    early_stopping_callback = EarlyStopping(
+        monitor="val_loss",
+        patience=args.patience,  
+        mode="min",  
+        verbose=True
     )
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=f"models/{args.model_name}/lr{args.lr}_bs{args.batch_size}/",          
+        filename="{epoch:02d}-{val_loss:.4f}",  
+        monitor="val_loss",          
+        save_top_k=3,                
+        mode="min",                  
+        save_last=True,              
+        verbose=True
+    )
+    trainer = L.Trainer(
+        max_epochs=args.max_epochs,
+        callbacks=[checkpoint_callback, early_stopping_callback]
+    )
+
+    # set up DataModule and model
+    band_indices = None
+    std_indices = [0, 1, 2, 3, 6]
+    norm_indices = [4, 5]
+    pm25 = Dataset.PM25DataModule('./data/dataset_2', args.batch_size, args.num_workers, norm_indices, std_indices, band_indices=band_indices)
+
+    pm25.setup(stage="fit")
+    train_dataloader = pm25.train_dataloader()
+    in_channels = next(iter(train_dataloader))[0].shape[1]
+
+    if args.model_name == 'Persistence':
+        model = Models.Persistence(out_channels=1)
+        results = trainer.validate(model, datamodule=pm25)
+        print(results)
+        return
+    
+    if args.model_name == 'UNet_v1':
+        model = Models.UNet_v1(**dict_args, in_channels=in_channels, out_channels=1)
+    elif args.model_name == 'SimpleConv':
+        model = Models.SimpleConv(**dict_args, in_channels=in_channels, out_channels=1)
+        
 
     # train and validate model
-    print('Begin training...')
-    trainer.fit(
-        model=model, 
-        train_dataloaders=train_dataloader, 
-        val_dataloaders = val_dataloader
-    )
-
-
+    trainer.fit(model, pm25)
 
 if __name__ == '__main__':
-    main()
+    parser = ArgumentParser()
+
+    parser.add_argument('--model_name', type=str, default='UNet_v1')
+    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument("--num_workers", type=int, default=0) 
+    parser.add_argument("--batch_size", type=int, default=8) 
+    parser.add_argument("--data_path", type=str, required=True)
+    parser.add_argument("--patience", type=int, default=10)
+    parser.add_argument("--max_epochs", type=int, default=1)
+
+    args = parser.parse_args()
+
+    # train
+    main(args)

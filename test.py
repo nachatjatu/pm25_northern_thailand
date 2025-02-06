@@ -3,14 +3,14 @@ import os
 import torch
 
 from src.PM25Stats import PM25Stats
-import src.PM25Transforms as PM25Transforms
+import Transforms as Transforms
 import torchvision.transforms as transforms
-from src.PM25Dataset import PM25Dataset
+from Dataset import PM25Dataset
 from torchgeo.samplers import PreChippedGeoSampler
 from torch.utils.data import DataLoader
 
-from src.PM25UNet import PM25UNet, PM25ArgParser
-from src.PM25SimpleConv import PM25SimpleConv
+from Models import PM25UNet, PM25ArgParser
+from SimpleConv import PM25SimpleConv
 import matplotlib.pyplot as plt
 
 # set up folder paths
@@ -32,9 +32,9 @@ print('min:', min)
 print('max:', max)
 
 
-to_tensor = PM25Transforms.ToTensor()
-normalize = PM25Transforms.Normalize(min, max, [4, 5])
-standardize = PM25Transforms.Standardize(mean, std, [0, 1, 2, 3, 6])
+to_tensor = Transforms.ToTensor()
+normalize = Transforms.Normalize(min, max, [4, 5])
+standardize = Transforms.Standardize(mean, std, [0, 1, 2, 3, 6])
 transform = transforms.Compose([to_tensor, normalize, standardize])
 
 mean, std, min, max = PM25Stats(train_path, 1, 0, transform).compute_statistics()
