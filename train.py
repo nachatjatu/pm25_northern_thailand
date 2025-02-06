@@ -34,7 +34,7 @@ def main(args):
     band_indices = None
     std_indices = [0, 1, 2, 3, 6]
     norm_indices = [4, 5]
-    pm25 = Dataset.PM25DataModule('./data/dataset_2', args.batch_size, args.num_workers, norm_indices, std_indices, band_indices=band_indices)
+    pm25 = Dataset.PM25DataModule(args.data_path, args.batch_size, args.num_workers, norm_indices, std_indices, band_indices=band_indices)
 
     pm25.setup(stage="fit")
     train_dataloader = pm25.train_dataloader()
