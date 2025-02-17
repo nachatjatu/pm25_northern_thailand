@@ -213,9 +213,6 @@ class UNet_v1(L.LightningModule):
         self.lr = lr
         self.loss_fn = nn.MSELoss()
 
-        print(f'Using learning rate {self.lr}')
-        print(f'Using loss_fn {self.loss_fn}')
-
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)
         self.down3 = DownBlock(128, 256)       
