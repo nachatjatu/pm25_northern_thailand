@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 
 def vis_wind(ax, u_band, v_band):
     nx, ny = 256, 256  # Grid size
@@ -30,8 +29,6 @@ def vis_all(image):
         _, ax = plt.subplots(1, 1)
         vis_band(ax, image[band])
         ax.set_title(f'band {band}')
-
-
 
 def vis_transform(original_image, transform, u_band_idx, v_band_idx):
     num_bands =  original_image.shape[0]

@@ -61,7 +61,7 @@ class DownBlock(nn.Module):
     Methods:
         forward(x): passes input through DownBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels, dropout=0.1):
+    def __init__(self, in_channels, out_channels):
         """Initializes DownBlock
 
         Args:
@@ -73,7 +73,6 @@ class DownBlock(nn.Module):
             nn.Conv2d(in_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
             nn.ReLU(inplace = True),
-            nn.Dropout2d(dropout),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size = 3, padding = 'same')
         )
@@ -108,7 +107,7 @@ class BottleneckBlock(nn.Module):
     Methods:
         forward(x): passes input through BottleneckBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels, dropout=0.1):
+    def __init__(self, in_channels, out_channels):
         """Initializes BottleneckBlock
 
         Args:
@@ -120,11 +119,9 @@ class BottleneckBlock(nn.Module):
             nn.Conv2d(in_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
             nn.ReLU(inplace = True),
-            nn.Dropout2d(dropout),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
-            nn.ReLU(inplace = True),
-            nn.Dropout2d(dropout)
+            nn.ReLU(inplace = True)
         )
     
     def forward(self, x):
@@ -155,7 +152,7 @@ class UpBlock(nn.Module):
     Methods:
         forward(x, skip): Passes inputs through UpBlock, returns output tensor
     """
-    def __init__(self, in_channels, out_channels, dropout=0.1):
+    def __init__(self, in_channels, out_channels):
         """Initializes UpBlock
 
         Args:
@@ -169,7 +166,6 @@ class UpBlock(nn.Module):
             nn.Conv2d(in_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
             nn.ReLU(inplace = True),
-            nn.Dropout2d(dropout),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size = 3, padding = 'same'),
             nn.ReLU(inplace = True),
