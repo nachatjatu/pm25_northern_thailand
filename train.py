@@ -47,7 +47,8 @@ def main(args):
         'test': None
     }
 
-    train_dataset = Data.PM25Dataset(data_dir = args.data_path)
+    train_dataset = Data.PM25Dataset(data_dir = args.data_path + '/train')
+    print(train_dataset)
     mean, sd, min, max = train_dataset.compute_statistics(
         batch_size = args.batch_size
     )
