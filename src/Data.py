@@ -58,11 +58,6 @@ class PM25Dataset(VisionDataset):
         """
 
         # we must explicitly handle device transfer
-        device = torch.device(
-            'cuda' if torch.cuda.is_available()
-            else 'mps' if torch.backends.mps.is_available()
-            else 'cpu'
-        )
 
         # load dataloader
         dataloader = DataLoader(
@@ -76,19 +71,17 @@ class PM25Dataset(VisionDataset):
         num_bands = inputs.shape[1] + outputs.shape[1]
         
         # initialize tensors for running computations
-        psum = torch.zeros(num_bands, dtype=torch.float32, device=device)
-        psum_sq = torch.zeros(num_bands, dtype=torch.float32, device=device)
+        psum = torch.zeros(num_bands, dtype=torch.float32)
+        psum_sq = torch.zeros(num_bands, dtype=torch.float32)
         running_min = torch.full((num_bands,), float('inf'), 
-                                    dtype=torch.float32, device=device)
+                                    dtype=torch.float32)
         running_max = torch.full((num_bands,), float('-inf'), 
-                                    dtype=torch.float32, device=device)
+                                    dtype=torch.float32)
 
         # keep track of total pixels for averaging
         total_pixels = 0
 
         for inputs, outputs in dataloader:
-            # move tensors to device
-            inputs, outputs = inputs.to(device), outputs.to(device)
 
             # combine tensors for batch computation
             image = torch.cat((inputs, outputs), dim = 1)
