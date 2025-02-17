@@ -58,7 +58,7 @@ def main(args):
     rotate = Transforms.RandomRotate(8, 9)
 
     transforms_dict = {
-        'train': transforms.Compose([flip, rotate, normalize, standardize]),
+        'train': transforms.Compose([normalize, standardize]),
         'val': transforms.Compose([normalize, standardize]),
         'test': transforms.Compose([normalize, standardize])
     }
