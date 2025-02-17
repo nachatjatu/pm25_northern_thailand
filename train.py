@@ -1,10 +1,12 @@
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
-import Data as Data
+import src.Data as Data
 import src.Models as Models
+import src.Transforms as Transforms
 from argparse import ArgumentParser
 from lightning.pytorch.loggers import TensorBoardLogger
 import os
+import torchvision.transforms as transforms
 
 def main(args):
     dict_args = vars(args)
@@ -33,34 +35,82 @@ def main(args):
         callbacks=[checkpoint_callback, early_stopping_callback]
     )
 
-    # set up DataModule and model
+    # set up DataModule
     band_indices = None
-    std_indices = [0, 1, 2, 3, 6]
-    norm_indices = [4, 5]
-    pm25 = Data.PM25DataModule(
-        args.data_path, args.batch_size, args.num_workers, 
-        norm_indices, std_indices, band_indices=band_indices
+    std_indices = [0, 8, 9, 10, 11, 12, 13, 17, 18]
+    norm_indices = [1, 2, 3, 4, 5, 6, 7, 14, 15, 16]
+
+    transforms_dict = {
+        'train': None,
+        'val': None,
+        'test': None
+    }
+
+    pm25_data = Data.PM25DataModule(
+        args.data_path, transforms_dict, args.batch_size, args.num_workers, 
+        select_bands=band_indices
     )
 
-    pm25.setup(stage="fit")
+    pm25_data.setup()
 
-    return
-    train_dataloader = pm25.train_dataloader()
+    print(pm25_data.transforms)
+
+    train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
 
+    mean, sd, min, max = train_dataloader.dataset.compute_statistics()
+    print('train statistics')
+    print(mean)
+    print(sd)
+    print(min)
+    print(max)
+    normalize = Transforms.Normalize(min, max, norm_indices)
+    standardize = Transforms.Standardize(mean, sd, std_indices)
+
+    transforms_dict = {
+        'train': transforms.Compose([normalize, standardize]),
+        'val': transforms.Compose([normalize, standardize]),
+        'test': transforms.Compose([normalize, standardize])
+    }
+    pm25_data.transforms = transforms_dict
+
+    print(pm25_data.transforms)
+    pm25_data.setup()
+
+    mean, sd, min, max = pm25_data.train_dataloader().dataset.compute_statistics()
+    print('train statistics')
+    print(mean)
+    print(sd)
+    print(min)
+    print(max)
+
+    mean, sd, min, max = pm25_data.val_dataloader().dataset.compute_statistics()
+    print('val statistics')
+    print(mean)
+    print(sd)
+    print(min)
+    print(max)
+
+    mean, sd, min, max = pm25_data.test_dataloader().dataset.compute_statistics()
+    print('test statistics')
+    print(mean)
+    print(sd)
+    print(min)
+    print(max)
+
+    # set up model
     if args.model_name == 'Persistence':
         model = Models.Persistence(out_channels=1)
-        results = trainer.validate(model, datamodule=pm25)
+        results = trainer.validate(model, datamodule=pm25_data)
         print(results)
         return
-    
     if args.model_name == 'UNet_v1':
         model = Models.UNet_v1(**dict_args, in_channels=in_channels, out_channels=1)
     elif args.model_name == 'SimpleConv':
         model = Models.SimpleConv(**dict_args, in_channels=in_channels, out_channels=1)
         
     # train and validate model
-    trainer.fit(model, pm25)
+    trainer.fit(model, pm25_data)
 
 if __name__ == '__main__':
     parser = ArgumentParser()

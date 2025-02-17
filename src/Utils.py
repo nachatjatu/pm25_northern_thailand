@@ -141,7 +141,7 @@ def find_nan(data_dir):
         print('No NaN values found')
 
 # find_nan('./data/dataset_3/')
-# split_data('./data/dataset_3/', 0.7, 0.15, 0.15, 195)
+split_data('./data/dataset_3/', 0.7, 0.15, 0.15, 195)
 # sleep(10)
 # recombine_data('./data/dataset_3/')
-remove_first_band('./data/tmp')
+# remove_first_band('./data/tmp')
