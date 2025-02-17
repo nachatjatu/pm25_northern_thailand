@@ -208,10 +208,10 @@ class UNet_v1(L.LightningModule):
         validation_step(self, batch, _): Performs one step in the val loop
         test_step(self, batch, _): Performs one step in the testing loop
     """
-    def __init__(self, in_channels, out_channels, lr, **kwargs):
+    def __init__(self, in_channels, out_channels, lr, loss_fn, **kwargs):
         super(UNet_v1, self).__init__()
         self.lr = lr
-        self.loss_fn = nn.MSELoss()
+        self.loss_fn = loss_fn
 
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)

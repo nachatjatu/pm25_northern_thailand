@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from lightning.pytorch.loggers import TensorBoardLogger
 import os
 import torchvision.transforms as transforms
+import torch.nn as nn
 
 def main(args):
     dict_args = vars(args)
@@ -19,7 +20,7 @@ def main(args):
         verbose=True
     )
     checkpoint_callback = ModelCheckpoint(
-        dirpath=f"models/{args.model_name}/lr{args.lr}_bs{args.batch_size}/{os.getenv('SLURM_JOB_ID', 'default')}",          
+        dirpath=f"models/{args.model_name}/lr{args.lr}_bs{args.batch_size}_loss_fn{args.loss_fn}/{os.getenv('SLURM_JOB_ID', 'default')}",          
         filename="{epoch:02d}-{val_loss:.4f}",  
         monitor="val_loss",          
         save_top_k=3,                
@@ -47,7 +48,6 @@ def main(args):
     }
 
     train_dataset = Data.PM25Dataset(data_dir = args.data_path + '/train')
-    print(train_dataset)
     mean, sd, min, max = train_dataset.compute_statistics(
         batch_size = args.batch_size
     )
@@ -73,15 +73,17 @@ def main(args):
     in_channels = next(iter(train_dataloader))[0].shape[1]
 
     # set up model
+    loss_fn = nn.MSELoss() if args.loss_fn == 'mse' else nn.HuberLoss()
+
     if args.model_name == 'Persistence':
         model = Models.Persistence(out_channels=1)
         results = trainer.validate(model, datamodule=pm25_data)
         print(results)
         return
     if args.model_name == 'UNet_v1':
-        model = Models.UNet_v1(**dict_args, in_channels=in_channels, out_channels=1)
+        model = Models.UNet_v1(**dict_args, in_channels=in_channels, out_channels=1, loss_fn=loss_fn)
     elif args.model_name == 'SimpleConv':
-        model = Models.SimpleConv(**dict_args, in_channels=in_channels, out_channels=1)
+        model = Models.SimpleConv(**dict_args, in_channels=in_channels, out_channels=1, loss_fn=loss_fn)
         
     # train and validate model
     trainer.fit(model, pm25_data)
@@ -96,6 +98,7 @@ if __name__ == '__main__':
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--max_epochs", type=int, default=1)
+    parser.add_argument("--loss_fn", type=str, default='mse')
 
     args = parser.parse_args()
 
