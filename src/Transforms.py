@@ -49,6 +49,7 @@ class Normalize:
 
     def __call__(self, image):
         # clone image to avoid modifying original image
+        print(image.device)
         norm_image = image.clone()
 
         # normalize via the formula (x - x_min) / (x_max - x_min)
