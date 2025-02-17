@@ -21,10 +21,10 @@ class Persistence(L.LightningModule):
 
 
 class SimpleConv(L.LightningModule):
-    def __init__(self, in_channels, out_channels, lr, **kwargs):
+    def __init__(self, in_channels, out_channels, loss_fn, lr, **kwargs):
         super(SimpleConv, self).__init__()
         self.lr = lr
-        self.loss_fn = nn.MSELoss()
+        self.loss_fn = loss_fn
         self.conv = nn.Conv2d(in_channels, out_channels, 1, bias=True)
 
     def forward(self, x):
