@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from lightning.pytorch.loggers import TensorBoardLogger
 import os
 import torchvision.transforms as transforms
+import torch
 
 def main(args):
     dict_args = vars(args)
@@ -36,6 +37,8 @@ def main(args):
     )
 
     # set up DataModule
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                          
     band_indices = None
     std_indices = [0, 8, 9, 10, 11, 12, 13, 17, 18]
     norm_indices = [1, 2, 3, 4, 5, 6, 7, 14, 15, 16]
@@ -47,7 +50,7 @@ def main(args):
     }
 
     pm25_data = Data.PM25DataModule(
-        args.data_path, transforms_dict, args.batch_size, num_workers=0, 
+        args.data_path, transforms_dict, args.batch_size, args.num_workers, 
         select_bands=band_indices
     )
 
@@ -56,10 +59,13 @@ def main(args):
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
 
-    mean, sd, min, max = train_dataloader.dataset.compute_statistics()
+    mean, sd, min, max = train_dataloader.dataset.compute_statistics(
+        batch_size = args.batch_size,
+        num_workers = args.num_workers
+    )
 
-    normalize = Transforms.Normalize(min, max, norm_indices)
-    standardize = Transforms.Standardize(mean, sd, std_indices)
+    normalize = Transforms.Normalize(min, max, norm_indices, device)
+    standardize = Transforms.Standardize(mean, sd, std_indices, device)
 
     transforms_dict = {
         'train': transforms.Compose([normalize, standardize]),
@@ -67,7 +73,6 @@ def main(args):
         'test': transforms.Compose([normalize, standardize])
     }
     pm25_data.transforms = transforms_dict
-    pm25_data.num_workers = args.num_workers
 
     pm25_data.setup()
 

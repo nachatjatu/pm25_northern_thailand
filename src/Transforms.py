@@ -15,25 +15,19 @@ class Standardize:
             list containing indices of bands to be standardized
 
     """
-    def __init__(self, mean, sd, std_bands):
-        self.mean = mean
-        self.sd = sd
-        self.std_bands = torch.tensor(std_bands, dtype=torch.long)
+    def __init__(self, mean, sd, std_bands, device='cpu'):
+        self.mean = mean.to(device)
+        self.sd = sd.to(device)
+        self.std_bands = torch.tensor(std_bands, dtype=torch.long, device=device)
     
     def __call__(self, image):
-        # move tensors to device
-        device = image.device
-        mean = self.mean.to(device)
-        sd = self.sd.to(device)
-        std_bands = self.std_bands.to(device)
-
         # clone image to avoid modifying original image
         std_image = image.clone()
 
         # standardize via the formula (x - mean) / sd
-        std_image[std_bands, :, :] = (
-            image[std_bands, :, :] - mean[std_bands, None, None]
-        ) / sd[std_bands, None, None]
+        std_image[self.std_bands, :, :] = (
+            image[self.std_bands, :, :] - self.mean[self.std_bands, None, None]
+        ) / self.sd[self.std_bands, None, None]
         return std_image
     
 
@@ -48,25 +42,19 @@ class Normalize:
         norm_bands (list):
             list containing indices of bands to be normalized
     """
-    def __init__(self, min, max, norm_bands):
-        self.min = min
-        self.max = max
-        self.norm_bands = torch.tensor(norm_bands, dtype=torch.long)
+    def __init__(self, min, max, norm_bands, device='cpu'):
+        self.min = min.to(device)
+        self.max = max.to(device)
+        self.norm_bands = torch.tensor(norm_bands, dtype=torch.long, device=device)
 
     def __call__(self, image):
-        # move tensors to device
-        device = image.device
-        min = self.min.to(device)
-        max = self.max.to(device)
-        norm_bands = self.norm_bands.to(device)
-
         # clone image to avoid modifying original image
         norm_image = image.clone()
 
         # normalize via the formula (x - x_min) / (x_max - x_min)
-        norm_image[norm_bands] = (
-            image[norm_bands, :, :] - min[norm_bands, None, None]
-        ) / (max[norm_bands, None, None] - min[norm_bands, None, None])
+        norm_image[self.norm_bands] = (
+            image[self.norm_bands, :, :] - self.min[self.norm_bands, None, None]
+        ) / (self.max[self.norm_bands, None, None] - self.min[self.norm_bands, None, None])
         
         return norm_image
 
