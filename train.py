@@ -36,9 +36,7 @@ def main(args):
         callbacks=[checkpoint_callback, early_stopping_callback]
     )
 
-    # set up DataModule
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                          
+    # set up DataModule   
     band_indices = None
     std_indices = [0, 8, 9, 10, 11, 12, 13, 17, 18]
     norm_indices = [1, 2, 3, 4, 5, 6, 7, 14, 15, 16]
@@ -64,8 +62,8 @@ def main(args):
         num_workers = args.num_workers
     )
 
-    normalize = Transforms.Normalize(min, max, norm_indices, device)
-    standardize = Transforms.Standardize(mean, sd, std_indices, device)
+    normalize = Transforms.Normalize(min, max, norm_indices)
+    standardize = Transforms.Standardize(mean, sd, std_indices)
 
     transforms_dict = {
         'train': transforms.Compose([normalize, standardize]),
