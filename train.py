@@ -47,19 +47,9 @@ def main(args):
         'test': None
     }
 
-    pm25_data = Data.PM25DataModule(
-        args.data_path, transforms_dict, args.batch_size, args.num_workers, 
-        select_bands=band_indices
-    )
-
-    pm25_data.setup()
-
-    train_dataloader = pm25_data.train_dataloader()
-    in_channels = next(iter(train_dataloader))[0].shape[1]
-
-    mean, sd, min, max = train_dataloader.dataset.compute_statistics(
-        batch_size = args.batch_size,
-        num_workers = 0
+    train_dataset = Data.PM25Dataset(data_dir = args.data_path)
+    mean, sd, min, max = train_dataset.compute_statistics(
+        batch_size = args.batch_size
     )
 
     normalize = Transforms.Normalize(min, max, norm_indices)
@@ -70,9 +60,14 @@ def main(args):
         'val': transforms.Compose([normalize, standardize]),
         'test': transforms.Compose([normalize, standardize])
     }
-    pm25_data.transforms = transforms_dict
 
-    pm25_data.setup()
+    pm25_data = Data.PM25DataModule(
+        args.data_path, transforms_dict, args.batch_size, args.num_workers, 
+        select_bands=band_indices
+    )
+
+    train_dataloader = pm25_data.train_dataloader()
+    in_channels = next(iter(train_dataloader))[0].shape[1]
 
     # set up model
     if args.model_name == 'Persistence':
