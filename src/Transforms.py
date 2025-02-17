@@ -1,132 +1,172 @@
+
 import random
 import torch
 
+
 class Standardize:
-    def __init__(self, mean, std, band_indices):
+    """Standardizes selected image bands
+
+    Attributes:
+        mean (torch.tensor):   
+            tensor containing band-specific means
+        std (torch.tensor):
+            tensor containing band-specific standard deviations
+        std_bands (list):
+            list containing indices of bands to be standardized
+
+    """
+    def __init__(self, mean, sd, std_bands):
         self.mean = mean
-        self.std = std
-        self.band_indices = band_indices
+        self.sd = sd
+        self.std_bands = torch.tensor(std_bands, dtype=torch.long)
     
     def __call__(self, image):
-        standardized_image = image.clone()
-        band_indices = torch.tensor(self.band_indices, dtype=torch.long)
-        standardized_image[band_indices] = (
-            image[band_indices] - self.mean[band_indices, None, None]
-            ) / self.std[band_indices, None, None]
-        return standardized_image
+        # move tensors to device
+        device = image.device
+        mean = self.mean.to(device)
+        sd = self.sd.to(device)
+        std_bands = self.std_bands.to(device)
+
+        # clone image to avoid modifying original image
+        std_image = image.clone()
+
+        # standardize via the formula (x - mean) / sd
+        std_image[std_bands, :, :] = (
+            image[std_bands, :, :] - mean[std_bands, None, None]
+        ) / sd[std_bands, None, None]
+        return std_image
     
 
 class Normalize:
-    def __init__(self, min, max, band_indices):
-        self.min = min
-        self.max = max
-        self.band_indices = band_indices
-
-    def __call__(self, image):
-        normalized_image = image.clone()
-        band_indices = torch.tensor(self.band_indices, dtype=torch.long)
-        normalized_image[band_indices] = (
-            image[band_indices] - self.min[band_indices, None, None]
-            ) / (self.max[band_indices, None, None] - self.min[band_indices, None, None])
-        return normalized_image
-
-
-class ToTensor:
-    """Extracts image tensor from a GeoSampler sample dict 
+    """Normalizes selected image bands using min-max normalization
 
     Attributes:
-        sample (dict):  GeoSampler dict w/ 'image' key and tensor value
+        min (torch.tensor):
+            tensor containing band-specific minimum values
+        max (torch.tensor):
+            tensor containing band-specific maximum values
+        norm_bands (list):
+            list containing indices of bands to be normalized
     """
-    def __call__(self, sample):
-        return sample['image']
+    def __init__(self, min, max, norm_bands):
+        self.min = min
+        self.max = max
+        self.norm_bands = torch.tensor(norm_bands, dtype=torch.long)
+
+    def __call__(self, image):
+        # move tensors to device
+        device = image.device
+        min = self.min.to(device)
+        max = self.max.to(device)
+        norm_bands = self.norm_bands.to(device)
+
+        # clone image to avoid modifying original image
+        norm_image = image.clone()
+
+        # normalize via the formula (x - x_min) / (x_max - x_min)
+        norm_image[norm_bands] = (
+            image[norm_bands, :, :] - min[norm_bands, None, None]
+        ) / (max[norm_bands, None, None] - min[norm_bands, None, None])
+        
+        return norm_image
 
 
 class RandomRotate:
-    """Rotates image by random multiple of 90 degrees
+    """Randomly rotates an image by some multiple of 90 degrees
 
     Attributes:
-        angles (list): List containing valid angles to choose from
+        u_wind_index (int):
+            index of u_wind band in image
+        v_wind_index (int):
+            index of v_wind band in image
     """
-    def __init__(self, angles = [0, 90, 180, 270]):
-        self.angles = angles
 
-    def rotate_wind(self, u_wind_band, v_wind_band, angle):
-        """Handles rotation of directional wind bands
-
-        Args:
-            u_wind_band (torch.tensor):     tensor of shape (height, width)
-            v_wind_band (torch.tensor)):    tensor of shape (height, width)
-            angle (int):                    angle of rotation
-
-        Raises:
-            Exception: If non-right angles are specified
-
-        Returns:
-            torch.tensor, torch.tensor: rotated u-band, v-band (respectively)
+    def __init__(self, u_wind_index, v_wind_index):
         """
-        # prevents data overwriting
-        u_clone = u_wind_band.clone()
-        v_clone = v_wind_band.clone()
+        Args:
+            u_wind_index (int):
+                index of u_wind band in image
+            v_wind_index (int):
+                index of v_wind band in image
+        """
 
-        # rotates wind bands CCW, swapping and inverting values as needed
+        self.u_wind_index = u_wind_index
+        self.v_wind_index = v_wind_index
+
+    def __rotate_wind__(self, image, angle):
+        u_band = image[self.u_wind_index].clone()
+        v_band = image[self.v_wind_index].clone()
         if angle == 0:
-            return u_clone, v_clone
+            return u_band, v_band
         elif angle == 90:
-            return -v_clone, u_clone
+            print('rotate 90')
+            return -v_band, u_band
         elif angle == 180:
-            return -u_clone, -v_clone
-        elif angle == 270:
-            return v_clone, -u_clone
+            print('rotate 180')
+            return -u_band, -v_band
         else:
-            raise Exception('Invalid angle - only 0, 90, 180, 270 allowed.')
-
+            print('rotate 270')
+            return v_band, -u_band
 
     def __call__(self, image):
-        input_bands = image[:-1, :, :] 
-        ground_truth = image[-1, :, :].unsqueeze(0)
+        """ Applies rotation to both spatial bands and wind components """
 
-        # choose random angle of rotation
-        angle = random.choice(self.angles)
-        
-        # rotate all bands spatially
-        input_bands = torch.rot90(
-            input_bands, k = angle // 90, dims = [1, 2])
-        ground_truth = torch.rot90(
-            ground_truth, k = angle // 90, dims = [1, 2])
+        # Clone to avoid modifying the original tensor
+        image_clone = image.clone()
 
-        # handle wind band rotation
-        new_u, new_v = self.rotate_wind(input_bands[1, :, :], 
-                                        input_bands[2, :, :], 
-                                        angle)
-        input_bands[1, :, :] = new_u
-        input_bands[2, :, :] = new_v
+        # Choose a random angle of rotation
+        angle = random.choice([90, 270])  # Only rotating by 90 degrees CCW
 
-        return torch.cat((input_bands, ground_truth), dim=0)
+        # Apply spatial rotation first
+        image_clone = torch.rot90(image_clone, k=angle // 90, dims=[1, 2])
+
+        # Rotate wind components after the spatial rotation
+        new_u, new_v = self.__rotate_wind__(image_clone, angle)
+
+        # Assign adjusted wind bands back into rotated image
+        image_clone[self.u_wind_index] = new_u
+        image_clone[self.v_wind_index] = new_v
+
+        return image_clone
 
 
 class RandomFlip:
     """Flips image horizontally, vertically, or both, randomly
 
     Attributes:
-        flip_prob (float): Probability of a flip
+        u_wind_index (int):
+            index of u_wind band in image
+        v_wind_index (int):
+            index of v_wind band in image
     """
-    def __init__(self, flip_prob = 0.5):
-        self.flip_prob = flip_prob
-    
+
+    def __init__(self, u_wind_index, v_wind_index):
+        """
+        Args:
+            u_wind_index (int):
+                index of u_wind band in image
+            v_wind_index (int):
+                index of v_wind band in image
+        """
+
+        self.u_wind_index = u_wind_index
+        self.v_wind_index = v_wind_index
+
     def __call__(self, image):
-        input_bands = image[:-1, :, :]  
-        ground_truth = image[-1, :, :].unsqueeze(0)
+        # Clone the image to avoid modifying the original tensor
+        image_clone = image.clone()
 
-        # perform horizontal flip
-        if random.random() < self.flip_prob:
-            input_bands = torch.flip(input_bands, [2])
-            ground_truth = torch.flip(ground_truth, [2])
-            input_bands[1, :, :] = -input_bands[1, :, :]
+        # Choose flip direction randomly
+        flip = random.choice(['none', 'horizontal', 'vertical', 'both'])
 
-        # perform vertical flip
-        if random.random() < self.flip_prob:
-            input_bands = torch.flip(input_bands, [1])
-            ground_truth = torch.flip(ground_truth, [1])
-            input_bands[2, :, :] = -input_bands[2, :, :]
-        
-        return torch.cat((input_bands, ground_truth), dim=0)
+        if flip in ['horizontal', 'both']:
+            print('flipping horizontally')
+            image_clone = torch.flip(image_clone, [2])  # Flip along width
+            image_clone[self.u_wind_index, :, :] *= -1  # Flip wind component
+
+        if flip in ['vertical', 'both']:
+            print('flipping vertically')
+            image_clone = torch.flip(image_clone, [1])  # Flip along height
+            image_clone[self.v_wind_index, :, :] *= -1  # Flip wind component
+
+        return image_clone
