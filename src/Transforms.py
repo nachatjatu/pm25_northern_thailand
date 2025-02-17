@@ -58,7 +58,6 @@ class Normalize:
         norm_image[self.norm_bands] = (
             image[self.norm_bands, :, :] - self.min[self.norm_bands, None, None]
         ) / (self.max[self.norm_bands, None, None] - self.min[self.norm_bands, None, None])
-        s
         return norm_image
 
 
