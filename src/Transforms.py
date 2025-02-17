@@ -15,10 +15,10 @@ class Standardize:
             list containing indices of bands to be standardized
 
     """
-    def __init__(self, mean, sd, std_bands, device='cpu'):
-        self.mean = mean.to(device)
-        self.sd = sd.to(device)
-        self.std_bands = torch.tensor(std_bands, dtype=torch.long, device=device)
+    def __init__(self, mean, sd, std_bands):
+        self.mean = mean
+        self.sd = sd
+        self.std_bands = torch.tensor(std_bands, dtype=torch.long)
     
     def __call__(self, image):
         # clone image to avoid modifying original image
@@ -42,14 +42,13 @@ class Normalize:
         norm_bands (list):
             list containing indices of bands to be normalized
     """
-    def __init__(self, min, max, norm_bands, device='cpu'):
-        self.min = min.to(device)
-        self.max = max.to(device)
-        self.norm_bands = torch.tensor(norm_bands, dtype=torch.long, device=device)
+    def __init__(self, min, max, norm_bands):
+        self.min = min
+        self.max = max
+        self.norm_bands = torch.tensor(norm_bands, dtype=torch.long)
 
     def __call__(self, image):
         # clone image to avoid modifying original image
-        print(image.device)
         norm_image = image.clone()
 
         # normalize via the formula (x - x_min) / (x_max - x_min)
