@@ -7,7 +7,6 @@ from argparse import ArgumentParser
 from lightning.pytorch.loggers import TensorBoardLogger
 import os
 import torchvision.transforms as transforms
-import torch
 
 def main(args):
     dict_args = vars(args)
@@ -20,7 +19,7 @@ def main(args):
         verbose=True
     )
     checkpoint_callback = ModelCheckpoint(
-        dirpath=f"models/{args.model_name}/lr{args.lr}_bs{args.batch_size}/",          
+        dirpath=f"models/{args.model_name}/lr{args.lr}_bs{args.batch_size}/{os.getenv('SLURM_JOB_ID', 'default')}",          
         filename="{epoch:02d}-{val_loss:.4f}",  
         monitor="val_loss",          
         save_top_k=3,                
@@ -55,9 +54,11 @@ def main(args):
 
     normalize = Transforms.Normalize(min, max, norm_indices)
     standardize = Transforms.Standardize(mean, sd, std_indices)
+    flip = Transforms.RandomFlip(8, 9)
+    rotate = Transforms.RandomRotate(8, 9)
 
     transforms_dict = {
-        'train': transforms.Compose([normalize, standardize]),
+        'train': transforms.Compose([flip, rotate, normalize, standardize]),
         'val': transforms.Compose([normalize, standardize]),
         'test': transforms.Compose([normalize, standardize])
     }
