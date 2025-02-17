@@ -67,6 +67,7 @@ def main(args):
         select_bands=band_indices
     )
 
+    pm25_data.setup('train')
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
 
