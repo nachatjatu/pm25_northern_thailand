@@ -47,23 +47,17 @@ def main(args):
     }
 
     pm25_data = Data.PM25DataModule(
-        args.data_path, transforms_dict, args.batch_size, args.num_workers, 
+        args.data_path, transforms_dict, args.batch_size, num_workers=0, 
         select_bands=band_indices
     )
 
     pm25_data.setup()
 
-    print(pm25_data.transforms)
-
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
 
     mean, sd, min, max = train_dataloader.dataset.compute_statistics()
-    print('train statistics')
-    print(mean)
-    print(sd)
-    print(min)
-    print(max)
+
     normalize = Transforms.Normalize(min, max, norm_indices)
     standardize = Transforms.Standardize(mean, sd, std_indices)
 
@@ -73,30 +67,9 @@ def main(args):
         'test': transforms.Compose([normalize, standardize])
     }
     pm25_data.transforms = transforms_dict
+    pm25_data.num_workers = args.num_workers
 
-    print(pm25_data.transforms)
     pm25_data.setup()
-
-    mean, sd, min, max = pm25_data.train_dataloader().dataset.compute_statistics()
-    print('train statistics')
-    print(mean)
-    print(sd)
-    print(min)
-    print(max)
-
-    mean, sd, min, max = pm25_data.val_dataloader().dataset.compute_statistics()
-    print('val statistics')
-    print(mean)
-    print(sd)
-    print(min)
-    print(max)
-
-    mean, sd, min, max = pm25_data.test_dataloader().dataset.compute_statistics()
-    print('test statistics')
-    print(mean)
-    print(sd)
-    print(min)
-    print(max)
 
     # set up model
     if args.model_name == 'Persistence':
