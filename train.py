@@ -59,7 +59,7 @@ def main(args):
 
     mean, sd, min, max = train_dataloader.dataset.compute_statistics(
         batch_size = args.batch_size,
-        num_workers = args.num_workers
+        num_workers = 0
     )
 
     normalize = Transforms.Normalize(min, max, norm_indices)

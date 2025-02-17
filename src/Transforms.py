@@ -46,6 +46,9 @@ class Normalize:
         self.min = min
         self.max = max
         self.norm_bands = torch.tensor(norm_bands, dtype=torch.long)
+        print(self.min.device)
+        print(self.max.device)
+        print(self.norm_bands.device)
 
     def __call__(self, image):
         # clone image to avoid modifying original image
@@ -55,7 +58,7 @@ class Normalize:
         norm_image[self.norm_bands] = (
             image[self.norm_bands, :, :] - self.min[self.norm_bands, None, None]
         ) / (self.max[self.norm_bands, None, None] - self.min[self.norm_bands, None, None])
-        
+        s
         return norm_image
 
 
