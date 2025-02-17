@@ -5,10 +5,10 @@ import lightning as L
 
 
 class Persistence(L.LightningModule):
-    def __init__(self, out_channels):
+    def __init__(self, out_channels, loss_fn):
         super(Persistence, self).__init__()
         self.out_channels = out_channels
-        self.loss_fn = nn.MSELoss()
+        self.loss_fn = loss_fn
 
     def forward(self, x):
         return torch.zeros(x.shape[0], self.out_channels, x.shape[2], x.shape[3], device=x.device)

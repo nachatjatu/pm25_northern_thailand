@@ -76,7 +76,7 @@ def main(args):
     loss_fn = nn.MSELoss() if args.loss_fn == 'mse' else nn.HuberLoss()
 
     if args.model_name == 'Persistence':
-        model = Models.Persistence(out_channels=1)
+        model = Models.Persistence(out_channels=1, loss_fn=loss_fn)
         results = trainer.validate(model, datamodule=pm25_data)
         print(results)
         return
