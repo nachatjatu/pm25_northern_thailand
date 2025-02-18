@@ -81,9 +81,9 @@ def main(args):
         print(results)
         return
     if args.model_name == 'UNet_v1':
-        model = Models.UNet_v1(**dict_args, in_channels=in_channels, out_channels=1, loss_fn=loss_fn)
+        model = Models.UNet_v1(in_channels=in_channels, out_channels=1, lr=args.lr, loss_fn=loss_fn)
     elif args.model_name == 'SimpleConv':
-        model = Models.SimpleConv(**dict_args, in_channels=in_channels, out_channels=1, loss_fn=loss_fn)
+        model = Models.SimpleConv(in_channels=in_channels, out_channels=1, lr=args.lr, loss_fn=loss_fn)
         
     # train and validate model
     trainer.fit(model, pm25_data)
