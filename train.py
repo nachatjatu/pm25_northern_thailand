@@ -51,8 +51,9 @@ def main(args):
     exp_name = f"{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
 
     logger = TensorBoardLogger(save_dir="logs", name=exp_name)
+
     trainer = L.Trainer(
-        max_steps=args.max_steps
+        max_steps=args.max_steps,
         logger=logger,
         callbacks=callbacks,
         val_check_interval=args.max_steps / 4
