@@ -12,39 +12,40 @@ class PM25Dataset(VisionDataset):
     """custom VisionDataset class for processing PM2.5 image datasets
 
     Attributes:
-        data_dir (str):
+        path (str):
             path to folder containing data
         file_list (list):
             list of file names in root folder
         transform:
-            torchvision transform to be applied to images
-        select_bands (list):
-            list of indices of bands to actually load
+            transformation to be applied to loaded images
+        band_indices (list):
+            list of indices of bands to load
     
     Methods:
         compute_statistics(batch_size=1, num_workers=0):
             computes statistics over an entire dataset of images
     """
 
-    def __init__(self, data_dir, transform=None, select_bands=None):
+    def __init__(self, path, transform=None, band_indices=None, is_fivecrop=False):
         """
         Args:
-            data_dir (str):
+            path (str):
                 path to folder containing data
             transform (optional):
                 torchvision transform to be applied to images. Defaults to None.
-            select_bands (list, optional): 
-                list of indices of bands to actually load. Defaults to None.
+            band_indices (list, optional): 
+                list of indices of bands to  load. Defaults to None.
         """
 
-        super().__init__(data_dir, transform)
-        self.data_dir = data_dir
-        self.file_list = [f for f in os.listdir(data_dir) if f.endswith(".tif")] 
+        super().__init__(path, transform)
+        self.path = path
+        self.file_list = [f for f in os.listdir(path) if f.endswith(".tif")] 
         self.transform = transform
-        self.select_bands = select_bands
+        self.band_indices = band_indices
+        self.is_fivecrop = is_fivecrop
     
-    def compute_statistics(self, batch_size=1, num_workers=0):
-        """computes statistics over an entire dataset of images
+    def compute_dataset_statistics(self, batch_size=1, num_workers=0):
+        """computes dataset statistics over a dataset of images
 
         Args:
             batch_size (int):  
@@ -56,9 +57,6 @@ class PM25Dataset(VisionDataset):
             (torch.tensor, torch.tensor, torch.tensor, torch.tensor):
                 tensors for band-wise mean, std, min, and max, respectively
         """
-
-        # we must explicitly handle device transfer
-
         # load dataloader
         dataloader = DataLoader(
             self, 
@@ -102,9 +100,11 @@ class PM25Dataset(VisionDataset):
         std = torch.sqrt(var)
 
         return mean, std, running_min, running_max
-    
+
     def __getitem__(self, index):
-        """retrieves image from dataset by index
+        """retrieves image from dataset by index.
+        This function loads the image using rasterio, applies the transform,
+        then filters the bands afterwards.
 
         Args:
             index (int): index of image to be retrieved
@@ -114,26 +114,35 @@ class PM25Dataset(VisionDataset):
                 tuple of torch tensors, where the first tensor contains 
                 input bands and the second tensor contains a single output band
         """
-
-        img_path = os.path.join(self.data_dir, self.file_list[index])
+        img_path = os.path.join(self.path, self.file_list[index])
 
         # open image from path and convert to tensor
         with rasterio.open(img_path) as src:
             image = src.read()
+
         image_tensor = torch.tensor(image, dtype=torch.float32)
 
         # apply transformations and filter bands
         if self.transform:
             image_tensor = self.transform(image_tensor)
-        if self.select_bands:
-            image_tensor = image_tensor[self.select_bands]
 
-        # separate image into input and output bands
-        input = image_tensor[:-1]
-        output = image_tensor[-1:]
+        if self.is_fivecrop:
+            if self.band_indices:
+                image_tensor = image_tensor[:, self.band_indices, :, :]
 
-        return input, output
-    
+            input = image_tensor[:, :-1]
+            output = image_tensor[:, -1:]
+            return input, output
+
+        else:
+            if self.band_indices:
+                image_tensor = image_tensor[self.band_indices, :, :]
+
+            input = image_tensor[:-1]
+            output = image_tensor[-1:]
+            return input, output
+            
+
     def __len__(self):
         return len(self.file_list)
 
@@ -142,17 +151,20 @@ class PM25DataModule(L.LightningDataModule):
     """Handles data loading for PM2.5 datasets
 
     Attributes:
-        data_dir (str):  
-            path to folder containing all data
-        transforms (dict): 
-            dictionary of transforms to be applied to images loaded by train, 
-            val, and test DataLoaders
+        root (str):  
+            path to folder containing train, val, test data folders
         batch_size (int):  
             how many images to load at once in a batch
         num_workers (int):  
             how many parallel processes to use
-        select_bands (list): 
-            list of indices of bands to actually load
+        band_indices (list): 
+            list of indices of bands to load
+        train_transform:
+            transform to be applied to training images
+        val_transform:
+            transform to be applied to validation images
+        test_transform:
+            transform to be applied to test images
     
     Methods:
         setup(stage=None):
@@ -165,12 +177,13 @@ class PM25DataModule(L.LightningDataModule):
             returns DataLoader for test data
     """
 
-    def __init__(self, data_dir, transforms, batch_size=1, num_workers=0, 
-                 select_bands=None):
+    def __init__(self, root, batch_size=1, num_workers=0, band_indices=None,
+                 train_transform=None, val_transform=None, test_transform=None,
+                 collate_fn=None):
         """
         Args:
-            data_dir (str):
-                path to folder containing all data
+            root (str):
+                path to folder containing train, val, test data folders
             transforms (dict):
                 dictionary of transforms to be applied to images loaded by 
                 train, val, and test DataLoaders.
@@ -178,16 +191,25 @@ class PM25DataModule(L.LightningDataModule):
                 how many images to load at once in a batch. Defaults to 1.
             num_workers (int, optional):
                 how many parallel processes to use. Defaults to 0.
-            select_bands (list, optional): 
-                list of indices of bands to actually load. Defaults to None.
+            band_indices (list, optional): 
+                list of indices of bands to load. Defaults to None.
+            train_transform (optional):
+                transform to be applied to training images. Defaults to None.
+            val_transform (optional):
+                transform to be applied to validation images. Defaults to None.
+            test_transform (optional):
+                transform to be applied to test images. Defaults to None.
         """
 
         super().__init__()
-        self.data_dir = data_dir
-        self.transforms = transforms
+        self.root = root
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.select_bands = select_bands
+        self.band_indices = band_indices
+        self.train_transform = train_transform
+        self.val_transform = val_transform
+        self.test_transform = test_transform
+        self.collate_fn = collate_fn
 
     def setup(self, stage=None):
         """loads relevant data for specified training stage
@@ -202,45 +224,53 @@ class PM25DataModule(L.LightningDataModule):
             stage (str, optional):
                 string of training stage. Defaults to None.
         """
+        if stage not in ['fit', 'validate', 'test', None]:
+            raise ValueError(
+                'Invalid stage: must be "fit", "validate", "test", or None'
+            )
 
         if stage == 'fit' or stage is None:
             self.train_dataset = PM25Dataset(
-                os.path.join(self.data_dir, 'train'), 
-                self.transforms['train'],
-                self.select_bands
+                path=os.path.join(self.root, 'train'), 
+                transform=self.train_transform,
+                band_indices=self.band_indices
             )
 
         if stage == 'fit' or stage == 'validate' or stage is None:
             self.val_dataset = PM25Dataset(
-                os.path.join(self.data_dir, 'val'), 
-                self.transforms['val'],
-                self.select_bands
+                path=os.path.join(self.root, 'val'), 
+                transform=self.val_transform,
+                band_indices=self.band_indices,
+                is_fivecrop=True
             )
         
         if stage == 'test' or stage is None:
             self.test_dataset = PM25Dataset(
-                os.path.join(self.data_dir, 'test'), 
-                self.transforms['test'],
-                self.select_bands
+                path=os.path.join(self.root, 'test'), 
+                transform=self.test_transform,
+                band_indices=self.band_indices,
+                is_fivecrop=True
             )
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_dataset, 
+            dataset=self.train_dataset, 
             batch_size=self.batch_size, 
             num_workers=self.num_workers
         )
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_dataset, 
+            dataset=self.val_dataset, 
             batch_size=self.batch_size, 
-            num_workers=self.num_workers
+            num_workers=self.num_workers,
+            collate_fn=self.collate_fn
         )
     
     def test_dataloader(self):
         return DataLoader(
-            self.test_dataset, 
+            dataset=self.test_dataset, 
             batch_size=self.batch_size,
-            num_workers=self.num_workers
+            num_workers=self.num_workers,
+            collate_fn=self.collate_fn
         )

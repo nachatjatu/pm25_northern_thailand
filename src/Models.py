@@ -212,8 +212,6 @@ class UNet_v1(L.LightningModule):
         super(UNet_v1, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
-        print(f'using {loss_fn}')
-
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)
         self.down3 = DownBlock(128, 256)       
