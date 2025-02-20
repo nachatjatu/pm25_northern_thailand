@@ -103,7 +103,7 @@ def main(args):
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
 
-    loss_fn = torch.nn.HuberLoss()
+    loss_fn = torch.nn.MSELoss()
 
     if args.model == 'Persistence':
         model = src.Models.Persistence(out_channels=1, loss_fn=loss_fn)

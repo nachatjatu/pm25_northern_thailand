@@ -115,7 +115,6 @@ class PM25Dataset(VisionDataset):
                 input bands and the second tensor contains a single output band
         """
         img_path = os.path.join(self.path, self.file_list[index])
-        print(img_path)
 
         # open image from path and convert to tensor
         with rasterio.open(img_path) as src:
