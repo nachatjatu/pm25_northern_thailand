@@ -53,7 +53,7 @@ class SimpleConv_v2(L.LightningModule):
         super(SimpleConv_v2, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
-        self.conv = nn.Conv2d(in_channels, out_channels, 3, bias=True)
+        self.conv = nn.Conv2d(in_channels, out_channels, 3, bias=True, padding='same')
 
     def forward(self, x):
         return self.conv(x)
