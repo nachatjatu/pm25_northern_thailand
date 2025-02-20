@@ -56,7 +56,8 @@ def main(args):
         max_steps=args.max_steps,
         logger=logger,
         callbacks=callbacks,
-        val_check_interval=args.max_steps/50
+        val_check_interval=args.max_steps/50,
+        check_val_every_n_epoch=None
     )
 
     band_indices = None
@@ -104,6 +105,7 @@ def main(args):
     pm25_data.setup()
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
+
 
     loss_fn = torch.nn.MSELoss()
 
