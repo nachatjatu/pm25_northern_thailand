@@ -15,9 +15,9 @@ class Standardize:
             list containing indices of bands to be standardized
 
     """
-    def __init__(self, mean, sd, std_bands):
-        self.mean = mean
-        self.sd = sd
+    def __init__(self, mean_val, sd_val, std_bands):
+        self.mean_val = mean_val
+        self.sd_val = sd_val
         self.std_bands = torch.tensor(std_bands, dtype=torch.long)
     
     def __call__(self, image):
@@ -26,8 +26,8 @@ class Standardize:
 
         # standardize via the formula (x - mean) / sd
         std_image[self.std_bands, :, :] = (
-            image[self.std_bands, :, :] - self.mean[self.std_bands, None, None]
-        ) / self.sd[self.std_bands, None, None]
+            image[self.std_bands, :, :] - self.mean_val[self.std_bands, None, None]
+        ) / self.sd_val[self.std_bands, None, None]
         return std_image
     
 
@@ -42,9 +42,9 @@ class Normalize:
         norm_bands (list):
             list containing indices of bands to be normalized
     """
-    def __init__(self, min, max, norm_bands):
-        self.min = min
-        self.max = max
+    def __init__(self, min_val, max_val, norm_bands):
+        self.min_val = min_val
+        self.max_val = max_val
         self.norm_bands = torch.tensor(norm_bands, dtype=torch.long)
 
     def __call__(self, image):
@@ -53,8 +53,8 @@ class Normalize:
 
         # normalize via the formula (x - x_min) / (x_max - x_min)
         norm_image[self.norm_bands] = (
-            image[self.norm_bands, :, :] - self.min[self.norm_bands, None, None]
-        ) / (self.max[self.norm_bands, None, None] - self.min[self.norm_bands, None, None])
+            image[self.norm_bands, :, :] - self.min_val[self.norm_bands, None, None]
+        ) / (self.max_val[self.norm_bands, None, None] - self.min_val[self.norm_bands, None, None])
         return norm_image
 
 

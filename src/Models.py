@@ -20,12 +20,40 @@ class Persistence(L.LightningModule):
         self.log("val_loss", loss, on_epoch=True)
 
 
-class SimpleConv(L.LightningModule):
+class SimpleConv_v1(L.LightningModule):
     def __init__(self, in_channels, out_channels, loss_fn, lr):
-        super(SimpleConv, self).__init__()
+        super(SimpleConv_v1, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
         self.conv = nn.Conv2d(in_channels, out_channels, 1, bias=True)
+
+    def forward(self, x):
+        return self.conv(x)
+
+    def training_step(self, batch, _):
+        input_bands, true_pm25 = batch
+        pred_pm25 = self(input_bands)
+        loss = self.loss_fn(pred_pm25, true_pm25)
+        self.log("train_loss", loss, on_step=False, on_epoch=True)
+        return loss
+    
+    def validation_step(self, batch, _):
+        input_bands, true_pm25 = batch
+        pred_pm25 = self(input_bands)
+        loss = self.loss_fn(pred_pm25, true_pm25)
+        self.log("val_loss", loss, on_epoch=True)
+    
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.parameters(), lr=self.lr)
+        return optimizer
+    
+
+class SimpleConv_v2(L.LightningModule):
+    def __init__(self, in_channels, out_channels, loss_fn, lr):
+        super(SimpleConv_v2, self).__init__()
+        self.lr = lr
+        self.loss_fn = loss_fn
+        self.conv = nn.Conv2d(in_channels, out_channels, 3, bias=True)
 
     def forward(self, x):
         return self.conv(x)

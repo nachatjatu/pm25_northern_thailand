@@ -95,11 +95,11 @@ class PM25Dataset(VisionDataset):
             running_max = torch.maximum(running_max, image.amax(dim=[0, 2, 3]))
 
         # compute mean, var, std
-        mean = psum / total_pixels
-        var = (psum_sq / total_pixels) - (mean) ** 2
-        std = torch.sqrt(var)
+        mean_val = psum / total_pixels
+        var_val = (psum_sq / total_pixels) - (mean_val) ** 2
+        sd_val = torch.sqrt(var_val)
 
-        return mean, std, running_min, running_max
+        return mean_val, sd_val, running_min, running_max
 
     def __getitem__(self, index):
         """retrieves image from dataset by index.
@@ -115,6 +115,7 @@ class PM25Dataset(VisionDataset):
                 input bands and the second tensor contains a single output band
         """
         img_path = os.path.join(self.path, self.file_list[index])
+        print(img_path)
 
         # open image from path and convert to tensor
         with rasterio.open(img_path) as src:
