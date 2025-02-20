@@ -265,8 +265,7 @@ class PM25DataModule(L.LightningDataModule):
             dataset=self.val_dataset, 
             batch_size=self.batch_size, 
             num_workers=self.num_workers,
-            collate_fn=self.collate_fn,
-            shuffle=True
+            collate_fn=self.collate_fn
         )
     
     def test_dataloader(self):
@@ -274,6 +273,5 @@ class PM25DataModule(L.LightningDataModule):
             dataset=self.test_dataset, 
             batch_size=self.batch_size,
             num_workers=self.num_workers,
-            collate_fn=self.collate_fn,
-            shuffle=True
+            collate_fn=self.collate_fn
         )
