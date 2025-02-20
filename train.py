@@ -58,7 +58,7 @@ def main(args):
         callbacks=callbacks,
     )
 
-    band_indices = None
+    band_indices = [0, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16]
     std_indices = [0, 6, 7, 8, 9, 10, 11, 13, 15, 16]
     norm_indices = [1, 2, 3, 4, 5, 12, 14]
 
@@ -103,7 +103,6 @@ def main(args):
     pm25_data.setup()
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
-
 
     loss_fn = torch.nn.MSELoss()
 
