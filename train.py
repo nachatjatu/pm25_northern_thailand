@@ -66,8 +66,7 @@ def main(args):
 
     normalize = src.Transforms.Normalize(min_val, max_val, norm_indices)
     standardize = src.Transforms.Standardize(mean, sd, std_indices)
-    # flip = src.Transforms.RandomFlip(6, 7)
-    # rotate = src.Transforms.RandomRotate(6, 7)
+
 
     train_transform = T.Compose(
         [normalize, standardize, T.RandomCrop(256)]
@@ -128,8 +127,16 @@ def main(args):
             loss_fn=loss_fn
         )
 
-    elif args.model == 'SimpleConv':
-        model = src.Models.SimpleConv(
+    elif args.model == 'SimpleConv_v1':
+        model = src.Models.SimpleConv_v1(
+            in_channels=in_channels, 
+            out_channels=1, 
+            lr=args.lr, 
+            loss_fn=loss_fn
+        )
+
+    elif args.model == 'SimpleConv_v2':
+        model = src.Models.SimpleConv_v2(
             in_channels=in_channels, 
             out_channels=1, 
             lr=args.lr, 
@@ -138,9 +145,6 @@ def main(args):
         
     # train and validate model
     trainer.fit(model, pm25_data)
-
-
-
 
 if __name__ == '__main__':
     parser = ArgumentParser()
