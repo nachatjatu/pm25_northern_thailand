@@ -119,6 +119,14 @@ def main(args):
             lr=args.lr, 
             loss_fn=loss_fn
         )
+    
+    elif args.model == 'UNet_v2':
+        model = src.Models.UNet_v2(
+            in_channels=in_channels, 
+            out_channels=1, 
+            lr=args.lr, 
+            loss_fn=loss_fn
+        )
 
     elif args.model == 'SimpleConv':
         model = src.Models.SimpleConv(
