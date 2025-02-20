@@ -56,7 +56,7 @@ def main(args):
         max_steps=args.max_steps,
         logger=logger,
         callbacks=callbacks,
-        val_check_interval=args.max_steps/50,
+        val_check_interval=args.max_steps/25,
         check_val_every_n_epoch=None
     )
 
