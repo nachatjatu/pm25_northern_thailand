@@ -52,9 +52,10 @@ def main(args):
 
     logger = TensorBoardLogger(save_dir="logs", name=exp_name)
     trainer = L.Trainer(
-        max_epochs=args.max_epochs,
+        max_steps=args.max_steps
         logger=logger,
-        callbacks=callbacks
+        callbacks=callbacks,
+        val_check_interval=args.max_steps / 4
     )
 
     band_indices = None
@@ -142,7 +143,7 @@ if __name__ == '__main__':
     parser.add_argument("--batch_size", type=int, default=8) 
     parser.add_argument("--root", type=str, required=True)
     parser.add_argument("--patience", type=int, default=10)
-    parser.add_argument("--max_epochs", type=int, default=1)
+    parser.add_argument("--max_steps", type=int, default=50000)
 
     args = parser.parse_args()
 
