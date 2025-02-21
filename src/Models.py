@@ -356,7 +356,6 @@ class UNet_v2(L.LightningModule):
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        print(loss)
         return loss
     
     def validation_step(self, batch, _):
