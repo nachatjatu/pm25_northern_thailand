@@ -265,6 +265,13 @@ class UNet_v1(L.LightningModule):
         self.up1 = UpBlock(128, 64)
         self.out = nn.Conv2d(64, out_channels, kernel_size = 1)
 
+    def on_after_backward(self):
+        """Called after loss.backward(), before optimizer step."""
+        print("Gradient Magnitudes:")
+        for name, param in self.named_parameters():
+            if param.grad is not None:
+                print(f"{name}: {param.grad.norm().item():.4f}")
+
     def forward(self, x):
         # pass image through downsampling blocks, retaining skip connections
         x1_conv, x1_down = self.down1(x)
@@ -287,6 +294,7 @@ class UNet_v1(L.LightningModule):
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
         self.log("train_loss", loss, on_step=False, on_epoch=True)
+        print(loss.clone().detach().item())
         return loss
     
     def validation_step(self, batch, _):
@@ -302,6 +310,156 @@ class UNet_v1(L.LightningModule):
             weight_decay=self.weight_decay
         )
         return optimizer
+    
+
+
+
+class DownBlock_v2(nn.Module):
+    """A DownBlock module implementation for a U-Net
+
+    DownBlock implements one U-Net downsampling block, consisting of two
+    convolutions (w/ same padding) followed by a max pool. 
+
+    Attributes:
+        in_channels (int):  # of input channels
+        out_channels (int): # of output channels 
+    
+    Methods:
+        forward(x): passes input through DownBlock, returns output tensor
+    """
+    def __init__(self, in_channels, out_channels):
+        """Initializes DownBlock
+
+        Args:
+            in_channels (int):  # of input channels
+            out_channels (int): # of output channels
+        """
+        super(DownBlock_v2, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 
+                      kernel_size = 3, padding = 'same'),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(out_channels, out_channels, 
+                      kernel_size = 3, padding = 'same'),
+            nn.BatchNorm2d(out_channels)
+        )
+        self.pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
+
+    def forward(self, x):
+        """Performs forward pass on an input
+
+        Args:
+            x (torch.Tensor):   input tensor of shape 
+                                (batch_size, in_channels, height, width)
+
+        Returns:
+            torch.Tensor, torch.Tensor: output tensors after convolution and
+                                        max pooling, respectively
+        """
+        x_conv = self.conv(x)
+        x_down = self.pool(x_conv)
+        return x_conv, x_down # use x_conv for skip connections
+    
+
+class BottleneckBlock_v2(nn.Module):
+    """A BottleneckBlock implementation for a U-Net
+
+    BottleneckBlock implements one U-Net bottleneck block, consisting of two
+    convolutions (w/ same padding). 
+
+    Attributes:
+        in_channels (int):  # of input channels 
+        out_channels (int): # of output channels 
+    
+    Methods:
+        forward(x): passes input through BottleneckBlock, returns output tensor
+    """
+    def __init__(self, in_channels, out_channels):
+        """Initializes BottleneckBlock
+
+        Args:
+            in_channels (int):  # of input channels
+            out_channels (int): # of output channels
+        """
+        super(BottleneckBlock_v2, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 
+                      kernel_size = 3, padding = 'same'),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(out_channels, out_channels, 
+                      kernel_size = 3, padding = 'same'),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace = True)
+        )
+    
+    def forward(self, x):
+        """Performs forward pass on an input x
+
+        Args:
+            x (torch.tensor):   input tensor of shape 
+                                (batch_size, in_channels, height, width)
+
+        Returns:
+            torch.tensor: output tensor after convolutions
+        """
+        return self.conv(x)
+
+
+class UpBlock_v2(nn.Module):
+    """A UpBlock module implementation for a U-Net
+
+    UpBlock implements one U-Net upsampling block, consisting of a 
+    deconvolution followed by concatenation with a skip connection and
+    two convolutions (w/ same padding).
+
+    Attributes:
+        in_channels (int):      # of input channels
+        out_channels (int):     # of output channels 
+        skip (torch.tensor):    Skip connection tensor
+    
+    Methods:
+        forward(x, skip): Passes inputs through UpBlock, returns output tensor
+    """
+    def __init__(self, in_channels, out_channels):
+        """Initializes UpBlock
+
+        Args:
+            in_channels (int):  # of input channels
+            out_channels (int): # of output channels
+        """
+        super(UpBlock_v2, self).__init__()
+        self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, 
+                                     kernel_size = 2, stride = 2)
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 
+                      kernel_size = 3, padding = 'same'),
+            nn.ReLU(inplace = True),
+            nn.BatchNorm2d(out_channels),
+            nn.Conv2d(out_channels, out_channels, 
+                      kernel_size = 3, padding = 'same'),
+            nn.ReLU(inplace = True),
+            nn.BatchNorm2d(out_channels)
+        )
+
+    def forward(self, x, skip):
+        """Performs forward pass on an input and skip connection 
+
+        Args:
+            x (torch.tensor):       Input tensor of shape 
+                                    (batch_size, in_channels, height, width)
+            skip (torch.tensor):    Skip connection tensor of shape
+                                    (batch_size, in_channels, height, width)
+
+        Returns:
+            torch.tensor:   Output tensor after deconvolution, concatenation,
+                            and convolutions
+        """
+        x = self.up(x)
+        x = torch.cat((x, skip), dim = 1)
+        x = self.conv(x)
+        return x
     
 
 class UNet_v2(L.LightningModule):
@@ -328,12 +486,19 @@ class UNet_v2(L.LightningModule):
         self.loss_fn = loss_fn
         self.weight_decay = weight_decay
 
-        self.down1 = DownBlock(in_channels, 64) 
-        self.down2 = DownBlock(64, 128)       
-        self.bottleneck = BottleneckBlock(128, 256)
-        self.up2 = UpBlock(256, 128)
-        self.up1 = UpBlock(128, 64)
+        self.down1 = DownBlock_v2(in_channels, 64) 
+        self.down2 = DownBlock_v2(64, 128)       
+        self.bottleneck = BottleneckBlock_v2(128, 256)
+        self.up2 = UpBlock_v2(256, 128)
+        self.up1 = UpBlock_v2(128, 64)
         self.out = nn.Conv2d(64, out_channels, kernel_size = 1)
+
+    # def on_after_backward(self):
+    #     """Called after loss.backward(), before optimizer step."""
+    #     print("Gradient Magnitudes:")
+    #     for name, param in self.named_parameters():
+    #         if param.grad is not None:
+    #             print(f"{name}: {param.grad.norm().item():.4f}")
 
     def forward(self, x):
         # pass image through downsampling blocks, retaining skip connections
@@ -356,6 +521,7 @@ class UNet_v2(L.LightningModule):
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        # print(loss.clone().detach().item())
         return loss
     
     def validation_step(self, batch, _):

@@ -18,14 +18,16 @@ def main(args):
     # set up Logger and Trainer
     exp_name = f"{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
 
-    callbacks = src.Utils.init_callbacks(args)
+    callbacks = None
+    # callbacks = src.Utils.init_callbacks(args)
     logger = TensorBoardLogger(save_dir="logs", name=exp_name)
 
     trainer = L.Trainer(
         max_epochs=args.max_epochs,
+        limit_val_batches=5,
         logger=logger,
         callbacks=callbacks,
-        gradient_clip_val=1.0
+        gradient_clip_val=0.5
     )
 
     # set up data and transformations
@@ -42,7 +44,7 @@ def main(args):
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
     train_transform = T.Compose(
-        [normalize, standardize, T.RandomCrop(256)]
+        [normalize, standardize, T.CenterCrop(256)]
     )
 
     val_transform = T.Compose(
