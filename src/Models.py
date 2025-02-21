@@ -485,14 +485,14 @@ class UNet_v2(L.LightningModule):
         self.loss_fn = loss_fn
         self.weight_decay = weight_decay
 
-        self.down1 = DownBlock_v2(in_channels, 64) 
-        # self.down2 = DownBlock_v2(64, 128)       
+        self.down1 = DownBlock_v2(in_channels, 32) 
+        self.down2 = DownBlock_v2(32, 64)       
         # self.down3 = DownBlock_v2(128, 256)
         self.bottleneck = BottleneckBlock_v2(64, 128)
         # self.up3 = UpBlock_v2(512, 256)
-        # self.up2 = UpBlock_v2(256, 128)
-        self.up1 = UpBlock_v2(128, 64)
-        self.out = nn.Conv2d(64, out_channels, kernel_size = 1)
+        self.up2 = UpBlock_v2(128, 64)
+        self.up1 = UpBlock_v2(64, 32)
+        self.out = nn.Conv2d(32, out_channels, kernel_size = 1)
 
     # def on_after_backward(self):
     #     """Called after loss.backward(), before optimizer step."""
