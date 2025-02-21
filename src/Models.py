@@ -504,12 +504,14 @@ class UNet_v2(L.LightningModule):
     def forward(self, x):
         # pass image through downsampling blocks, retaining skip connections
         x1_conv, x1_down = self.down1(x)
+        x2_conv, x2_down = self.down2(x1_down)
 
         # pass image through bottleneck block
-        x_bottleneck = self.bottleneck(x1_down)
+        x_bottleneck = self.bottleneck(x2_down)
 
         # pass image through upsampling blocks, maintaining skip connections
-        x1_up = self.up1(x_bottleneck, x1_conv)
+        x2_up = self.up2(x_bottleneck, x2_conv)
+        x1_up = self.up1(x2_up, x1_conv)
 
         # pass image through output layer and return
         return self.out(x1_up)
