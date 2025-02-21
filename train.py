@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from lightning.pytorch.loggers import TensorBoardLogger
+from torch.utils.data import DataLoader
 import lightning as L
 
 import src.Data
@@ -10,6 +11,8 @@ import src.Utils
 import torchvision.transforms as T
 import os
 import torch
+                   
+torch.set_printoptions(precision=2, sci_mode=False, linewidth=80)
 
 def main(args):
     # set up Logger and Trainer
@@ -30,6 +33,10 @@ def main(args):
     norm_indices = [1, 2, 3, 4, 5, 12, 14]
 
     means, stds, mins, maxs = src.Utils.init_norm_std(args)
+    print('Means:\n', means)
+    print('SDs:\n', stds)
+    print('Mins:\n', mins)
+    print('Maxs:\n', maxs)
 
     normalize = src.Transforms.Normalize(mins, maxs, norm_indices)
     standardize = src.Transforms.Standardize(means, stds, std_indices)
@@ -47,6 +54,17 @@ def main(args):
     )
 
     test_transform = val_transform
+
+    # test norm, std
+    """
+    train_dataset = src.Data.PM25Dataset(path=os.path.join(args.root, 'train'), transform=T.Compose([normalize, standardize]))
+    dataloader = DataLoader(
+        train_dataset, 
+        batch_size=args.batch_size, 
+        num_workers=args.num_workers
+    )
+    means, stds, mins, maxs = src.Utils.compute_dataset_statistics(dataloader)
+    """
 
     pm25_data = src.Data.PM25DataModule(
         root=args.root,
