@@ -6,6 +6,110 @@ from pprint import pprint
 import shutil
 from sklearn.model_selection import train_test_split
 from time import sleep
+import torch
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
+from torch.utils.data import DataLoader
+import src
+
+def init_callbacks(args):
+    es_callback = EarlyStopping(
+        monitor="val_loss",
+        patience=args.patience,  
+        mode="min",  
+        verbose=True
+    )
+    ckpt_callback = ModelCheckpoint(
+        dirpath=(
+            f"models/{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
+            "/lr{args.lr}_bs{args.batch_size}"
+            "/{os.getenv('SLURM_JOB_ID', 'default')}"
+        ),
+        filename="{epoch:02d}-{val_loss:.4f}",  
+        monitor="val_loss",          
+        save_top_k=3,                
+        mode="min",                  
+        save_last=True,              
+        verbose=True
+    )
+    return [es_callback, ckpt_callback]
+
+
+def compute_dataset_statistics(dataloader):
+
+    # get total band count from first image in Dataset
+    inputs, outputs = next(iter(dataloader))
+    num_bands = inputs.shape[1] + outputs.shape[1]
+    
+    # initialize tensors for running computations
+    psum = torch.zeros(num_bands, dtype=torch.float32)
+    psum_sq = torch.zeros(num_bands, dtype=torch.float32)
+    running_min = torch.full((num_bands,), float('inf'), 
+                                dtype=torch.float32)
+    running_max = torch.full((num_bands,), float('-inf'), 
+                                dtype=torch.float32)
+
+    # keep track of total pixels for averaging
+    total_pixels = 0
+
+    for inputs, outputs in dataloader:
+
+        # combine tensors for batch computation
+        image = torch.cat((inputs, outputs), dim = 1)
+
+        # add batch pixel count to total
+        batch_pixels = image.shape[0] * image.shape[2] * image.shape[3] 
+        total_pixels += batch_pixels
+
+        # update running trackers
+        psum += image.sum(axis = [0, 2, 3])
+        psum_sq += (image ** 2).sum(axis = [0, 2, 3])
+        running_min = torch.minimum(running_min, image.amin(dim=[0, 2, 3]))
+        running_max = torch.maximum(running_max, image.amax(dim=[0, 2, 3]))
+
+    # compute mean, var, std
+    mean_val = psum / total_pixels
+    var_val = (psum_sq / total_pixels) - (mean_val) ** 2
+    sd_val = torch.sqrt(var_val)
+
+    return mean_val, sd_val, running_min, running_max
+
+
+def init_norm_std(args):
+    train_dataset = src.Data.PM25Dataset(path=os.path.join(args.root, 'train'))
+    dataloader = DataLoader(
+        train_dataset, 
+        batch_size=args.batch_size, 
+        num_workers=args.num_workers
+    )
+    return compute_dataset_statistics(dataloader)
+
+
+def collate_fn(batch):
+    """
+    Flattens the batch when FiveCrop is used, so each crop is treated as an independent sample.
+    """
+    inputs, outputs = zip(*batch)  
+    inputs = torch.cat(inputs, dim=0)  
+    outputs = torch.cat(outputs, dim=0) 
+    return inputs, outputs
+
+
+def init_model(args, loss_fn, pm25_data):
+    pm25_data.setup()
+    train_dataloader = pm25_data.train_dataloader()
+    in_channels = next(iter(train_dataloader))[0].shape[1]
+
+    model_class = getattr(src.Models, args.model)
+
+    model = model_class(
+        in_channels=in_channels, 
+        out_channels=1, 
+        lr=args.lr, 
+        loss_fn=loss_fn,
+        weight_decay=args.weight_decay
+    )
+    
+    return model
 
 def remove_first_band(data_dir):
     files = [f for f in os.listdir(data_dir) if f.endswith(('.tif'))]
@@ -141,7 +245,7 @@ def find_nan(data_dir):
         print('No NaN values found')
 
 # find_nan('./data/dataset_4/')
-split_data('./data/dataset_4/', 0.8, 0.1, 0.1, 195)
+# split_data('./data/dataset_4/', 0.8, 0.1, 0.1, 195)
 # sleep(10)
 # recombine_data('./data/dataset_3/')
 # remove_first_band('./data/tmp')

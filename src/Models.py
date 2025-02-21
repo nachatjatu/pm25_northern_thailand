@@ -21,10 +21,12 @@ class Persistence(L.LightningModule):
 
 
 class SimpleConv_v1(L.LightningModule):
-    def __init__(self, in_channels, out_channels, loss_fn, lr):
+    def __init__(self, in_channels, out_channels, loss_fn, lr, weight_decay):
         super(SimpleConv_v1, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
+        self.weight_decay = weight_decay
+
         self.conv = nn.Conv2d(in_channels, out_channels, 1, bias=True)
 
     def forward(self, x):
@@ -44,16 +46,23 @@ class SimpleConv_v1(L.LightningModule):
         self.log("val_loss", loss, on_epoch=True)
     
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=self.lr)
+        optimizer = optim.AdamW(
+            self.parameters(), 
+            lr=self.lr,
+            weight_decay=self.weight_decay
+        )
         return optimizer
     
 
 class SimpleConv_v2(L.LightningModule):
-    def __init__(self, in_channels, out_channels, loss_fn, lr):
+    def __init__(self, in_channels, out_channels, loss_fn, lr, weight_decay):
         super(SimpleConv_v2, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
-        self.conv = nn.Conv2d(in_channels, out_channels, 3, bias=True, padding='same')
+        self.weight_decay = weight_decay
+
+        self.conv = nn.Conv2d(
+            in_channels, out_channels, 3, bias=True, padding='same')
 
     def forward(self, x):
         return self.conv(x)
@@ -62,6 +71,7 @@ class SimpleConv_v2(L.LightningModule):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
+        print(loss.clone().detach())
         self.log("train_loss", loss, on_step=False, on_epoch=True)
         return loss
     
@@ -72,7 +82,11 @@ class SimpleConv_v2(L.LightningModule):
         self.log("val_loss", loss, on_epoch=True)
     
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=self.lr)
+        optimizer = optim.AdamW(
+            self.parameters(), 
+            lr=self.lr,
+            weight_decay=self.weight_decay
+        )
         return optimizer
     
 
@@ -236,10 +250,12 @@ class UNet_v1(L.LightningModule):
         validation_step(self, batch, _): Performs one step in the val loop
         test_step(self, batch, _): Performs one step in the testing loop
     """
-    def __init__(self, in_channels, out_channels, lr, loss_fn):
+    def __init__(self, in_channels, out_channels, lr, loss_fn, weight_decay):
         super(UNet_v1, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
+        self.weight_decay = weight_decay
+
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)
         self.down3 = DownBlock(128, 256)       
@@ -280,7 +296,11 @@ class UNet_v1(L.LightningModule):
         self.log("val_loss", loss, on_epoch=True)
     
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=self.lr)
+        optimizer = optim.AdamW(
+            self.parameters(), 
+            lr=self.lr, 
+            weight_decay=self.weight_decay
+        )
         return optimizer
     
 
@@ -302,10 +322,12 @@ class UNet_v2(L.LightningModule):
         validation_step(self, batch, _): Performs one step in the val loop
         test_step(self, batch, _): Performs one step in the testing loop
     """
-    def __init__(self, in_channels, out_channels, lr, loss_fn):
+    def __init__(self, in_channels, out_channels, lr, loss_fn, weight_decay):
         super(UNet_v2, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
+        self.weight_decay = weight_decay
+
         self.down1 = DownBlock(in_channels, 64) 
         self.down2 = DownBlock(64, 128)       
         self.bottleneck = BottleneckBlock(128, 256)
@@ -333,7 +355,8 @@ class UNet_v2(L.LightningModule):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.log("train_loss", loss, on_step=False, on_epoch=True)
+        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        print(loss)
         return loss
     
     def validation_step(self, batch, _):
@@ -343,6 +366,10 @@ class UNet_v2(L.LightningModule):
         self.log("val_loss", loss, on_epoch=True)
     
     def configure_optimizers(self):
-        optimizer = optim.AdamW(self.parameters(), lr=self.lr, weight_decay=1e-4)
+        optimizer = optim.AdamW(
+            self.parameters(), 
+            lr=self.lr, 
+            weight_decay=self.weight_decay
+        )
         return optimizer
     

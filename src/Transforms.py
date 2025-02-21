@@ -4,57 +4,30 @@ import torch
 
 
 class Standardize:
-    """Standardizes selected image bands
-
-    Attributes:
-        mean (torch.tensor):   
-            tensor containing band-specific means
-        std (torch.tensor):
-            tensor containing band-specific standard deviations
-        std_bands (list):
-            list containing indices of bands to be standardized
-
-    """
-    def __init__(self, mean_val, sd_val, std_bands):
-        self.mean_val = mean_val
-        self.sd_val = sd_val
-        self.std_bands = torch.tensor(std_bands, dtype=torch.long)
+    def __init__(self, means, sds, bands):
+        self.means = means
+        self.sds = sds
+        self.bands = torch.tensor(bands, dtype=torch.int)
     
     def __call__(self, image):
-        # clone image to avoid modifying original image
         std_image = image.clone()
-
-        # standardize via the formula (x - mean) / sd
-        std_image[self.std_bands, :, :] = (
-            image[self.std_bands, :, :] - self.mean_val[self.std_bands, None, None]
-        ) / self.sd_val[self.std_bands, None, None]
+        std_image[self.bands] = (
+            image[self.bands] - self.means[self.bands, None, None]
+        ) / self.sds[self.bands, None, None]
         return std_image
     
 
 class Normalize:
-    """Normalizes selected image bands using min-max normalization
-
-    Attributes:
-        min (torch.tensor):
-            tensor containing band-specific minimum values
-        max (torch.tensor):
-            tensor containing band-specific maximum values
-        norm_bands (list):
-            list containing indices of bands to be normalized
-    """
-    def __init__(self, min_val, max_val, norm_bands):
-        self.min_val = min_val
-        self.max_val = max_val
-        self.norm_bands = torch.tensor(norm_bands, dtype=torch.long)
+    def __init__(self, mins, maxs, bands):
+        self.mins = mins
+        self.maxs = maxs
+        self.bands = torch.tensor(bands, dtype=torch.int)
 
     def __call__(self, image):
-        # clone image to avoid modifying original image
         norm_image = image.clone()
-
-        # normalize via the formula (x - x_min) / (x_max - x_min)
-        norm_image[self.norm_bands] = (
-            image[self.norm_bands, :, :] - self.min_val[self.norm_bands, None, None]
-        ) / (self.max_val[self.norm_bands, None, None] - self.min_val[self.norm_bands, None, None])
+        norm_image[self.bands] = (
+            image[self.bands, :, :] - self.mins[self.bands, None, None]
+        ) / (self.maxs[self.bands, None, None] - self.mins[self.bands, None, None])
         return norm_image
 
 
@@ -115,7 +88,6 @@ class RandomRotate:
         image_clone[self.v_wind_index] = new_v
 
         return image_clone
-
 
 class RandomFlip:
     """Flips image horizontally, vertically, or both, randomly
