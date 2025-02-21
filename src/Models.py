@@ -487,7 +487,9 @@ class UNet_v2(L.LightningModule):
 
         self.down1 = DownBlock_v2(in_channels, 64) 
         self.down2 = DownBlock_v2(64, 128)       
-        self.bottleneck = BottleneckBlock_v2(128, 256)
+        self.down3 = DownBlock_v2(128, 256)
+        self.bottleneck = BottleneckBlock_v2(256, 512)
+        self.up3 = UpBlock_v2(512, 256)
         self.up2 = UpBlock_v2(256, 128)
         self.up1 = UpBlock_v2(128, 64)
         self.out = nn.Conv2d(64, out_channels, kernel_size = 1)
@@ -503,12 +505,14 @@ class UNet_v2(L.LightningModule):
         # pass image through downsampling blocks, retaining skip connections
         x1_conv, x1_down = self.down1(x)
         x2_conv, x2_down = self.down2(x1_down)
+        x3_conv, x3_down = self.down3(x2_down)
 
         # pass image through bottleneck block
-        x_bottleneck = self.bottleneck(x2_down)
+        x_bottleneck = self.bottleneck(x3_down)
 
         # pass image through upsampling blocks, maintaining skip connections
-        x2_up = self.up2(x_bottleneck, x2_conv)
+        x3_up = self.up3(x_bottleneck, x3_conv)
+        x2_up = self.up2(x3_up, x2_conv)
         x1_up = self.up1(x2_up, x1_conv)
 
         # pass image through output layer and return
