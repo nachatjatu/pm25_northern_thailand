@@ -331,6 +331,7 @@ class UNet_v2(L.LightningModule):
 
         # pass image through output layer and return
         return self.out(x1_up)
+    
 
     def training_step(self, batch, _):
         input_bands, true_pm25 = batch

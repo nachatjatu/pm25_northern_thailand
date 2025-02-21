@@ -58,7 +58,7 @@ def main(args):
         callbacks=callbacks,
     )
 
-    band_indices = [0, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16]
+    band_indices = None
     std_indices = [0, 6, 7, 8, 9, 10, 11, 13, 15, 16]
     norm_indices = [1, 2, 3, 4, 5, 12, 14]
 
