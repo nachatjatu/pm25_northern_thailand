@@ -24,7 +24,6 @@ def main(args):
 
     trainer = L.Trainer(
         max_epochs=args.max_epochs,
-        limit_val_batches=5,
         logger=logger,
         callbacks=callbacks,
         gradient_clip_val=0.5
@@ -44,10 +43,6 @@ def main(args):
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
     train_transform = T.Compose(
-        [normalize, standardize, T.RandomCrop(256)]
-    )
-
-    val_transform = T.Compose(
         [normalize, standardize, T.Compose(
             [T.FiveCrop(256), T.Lambda(
                 lambda crops: torch.stack([crop for crop in crops])
@@ -55,7 +50,9 @@ def main(args):
         )]
     )
 
-    test_transform = val_transform
+    val_transform = train_transform
+
+    test_transform = train_transform
 
     # test norm, std
     """

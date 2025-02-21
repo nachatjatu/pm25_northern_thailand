@@ -52,7 +52,8 @@ class PM25DataModule(L.LightningDataModule):
     def setup(self, stage=None):
         self.train_dataset = PM25Dataset(
             path=os.path.join(self.root, 'train'), 
-            transform=self.train_transform
+            transform=self.train_transform,
+            is_fivecrop=True
         )
         self.val_dataset = PM25Dataset(
             path=os.path.join(self.root, 'val'), 
@@ -71,6 +72,7 @@ class PM25DataModule(L.LightningDataModule):
             batch_size=self.batch_size, 
             num_workers=self.num_workers,
             shuffle=True,
+            collate_fn=self.collate_fn
         )
 
     def val_dataloader(self):

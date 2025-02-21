@@ -265,12 +265,12 @@ class UNet_v1(L.LightningModule):
         self.up1 = UpBlock(128, 64)
         self.out = nn.Conv2d(64, out_channels, kernel_size = 1)
 
-    def on_after_backward(self):
-        """Called after loss.backward(), before optimizer step."""
-        print("Gradient Magnitudes:")
-        for name, param in self.named_parameters():
-            if param.grad is not None:
-                print(f"{name}: {param.grad.norm().item():.4f}")
+    # def on_after_backward(self):
+    #     """Called after loss.backward(), before optimizer step."""
+    #     print("Gradient Magnitudes:")
+    #     for name, param in self.named_parameters():
+    #         if param.grad is not None:
+    #             print(f"{name}: {param.grad.norm().item():.4f}")
 
     def forward(self, x):
         # pass image through downsampling blocks, retaining skip connections
@@ -294,7 +294,6 @@ class UNet_v1(L.LightningModule):
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
         self.log("train_loss", loss, on_step=False, on_epoch=True)
-        print(loss.clone().detach().item())
         return loss
     
     def validation_step(self, batch, _):
@@ -521,7 +520,6 @@ class UNet_v2(L.LightningModule):
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        # print(loss.clone().detach().item())
         return loss
     
     def validation_step(self, batch, _):
