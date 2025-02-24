@@ -5,7 +5,7 @@ import lightning as L
 
 
 class Persistence(L.LightningModule):
-    def __init__(self, out_channels, loss_fn):
+    def __init__(self, in_channels, out_channels, loss_fn, lr, weight_decay, num_layers, base_channels):
         super(Persistence, self).__init__()
         self.out_channels = out_channels
         self.loss_fn = loss_fn
@@ -21,7 +21,7 @@ class Persistence(L.LightningModule):
 
 
 class SimpleConv_v1(L.LightningModule):
-    def __init__(self, in_channels, out_channels, loss_fn, lr, weight_decay):
+    def __init__(self, in_channels, out_channels, loss_fn, lr, weight_decay, num_layers, base_channels):
         super(SimpleConv_v1, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
@@ -55,7 +55,7 @@ class SimpleConv_v1(L.LightningModule):
     
 
 class SimpleConv_v2(L.LightningModule):
-    def __init__(self, in_channels, out_channels, loss_fn, lr, weight_decay):
+    def __init__(self, in_channels, out_channels, loss_fn, lr, weight_decay, num_layers, base_channels):
         super(SimpleConv_v2, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
@@ -250,7 +250,7 @@ class UNet_v1(L.LightningModule):
         validation_step(self, batch, _): Performs one step in the val loop
         test_step(self, batch, _): Performs one step in the testing loop
     """
-    def __init__(self, in_channels, out_channels, lr, loss_fn, weight_decay):
+    def __init__(self, in_channels, out_channels, lr, loss_fn, weight_decay, num_layers, base_channels):
         super(UNet_v1, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
@@ -361,51 +361,6 @@ class DownBlock_v2(nn.Module):
         x_conv = self.conv(x)
         x_down = self.pool(x_conv)
         return x_conv, x_down # use x_conv for skip connections
-    
-
-class BottleneckBlock_v2(nn.Module):
-    """A BottleneckBlock implementation for a U-Net
-
-    BottleneckBlock implements one U-Net bottleneck block, consisting of two
-    convolutions (w/ same padding). 
-
-    Attributes:
-        in_channels (int):  # of input channels 
-        out_channels (int): # of output channels 
-    
-    Methods:
-        forward(x): passes input through BottleneckBlock, returns output tensor
-    """
-    def __init__(self, in_channels, out_channels):
-        """Initializes BottleneckBlock
-
-        Args:
-            in_channels (int):  # of input channels
-            out_channels (int): # of output channels
-        """
-        super(BottleneckBlock_v2, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 
-                      kernel_size = 3, padding = 1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace = True),
-            nn.Conv2d(out_channels, out_channels, 
-                      kernel_size = 3, padding = 1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace = True)
-        )
-    
-    def forward(self, x):
-        """Performs forward pass on an input x
-
-        Args:
-            x (torch.tensor):   input tensor of shape 
-                                (batch_size, in_channels, height, width)
-
-        Returns:
-            torch.tensor: output tensor after convolutions
-        """
-        return self.conv(x)
 
 
 class UpBlock_v2(nn.Module):
@@ -481,37 +436,53 @@ class UNet_v2(L.LightningModule):
         validation_step(self, batch, _): Performs one step in the val loop
         test_step(self, batch, _): Performs one step in the testing loop
     """
-    def __init__(self, in_channels, out_channels, lr, loss_fn, weight_decay):
+    def __init__(self, in_channels, out_channels, lr, loss_fn, weight_decay, base_channels=64, num_layers=3):
         super(UNet_v2, self).__init__()
         self.lr = lr
         self.loss_fn = loss_fn
         self.weight_decay = weight_decay
+        self.num_layers = num_layers
 
-        self.down1 = DownBlock_v2(in_channels, 64) 
-        self.down2 = DownBlock_v2(64, 128)       
-        self.down3 = DownBlock_v2(128, 256)
-        self.bottleneck = BottleneckBlock_v2(256, 512)
-        self.up3 = UpBlock_v2(512, 256)
-        self.up2 = UpBlock_v2(256, 128)
-        self.up1 = UpBlock_v2(128, 64)
-        self.out = nn.Conv2d(64, out_channels, kernel_size = 1)
+        self.down_blocks = nn.ModuleList()
+        self.up_blocks = nn.ModuleList()
+
+        down_channels = [in_channels] + [base_channels * (2 ** i) for i in range(num_layers)]
+
+        for i in range(num_layers):
+            self.down_blocks.append(DownBlock_v2(down_channels[i], down_channels[i+1]))
+
+        self.bottleneck = nn.Sequential(
+            nn.Conv2d(down_channels[-1], down_channels[-1] * 2, 
+                      kernel_size = 3, padding = 1),
+            nn.BatchNorm2d(down_channels[-1] * 2),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(down_channels[-1] * 2, down_channels[-1] * 2, 
+                      kernel_size = 3, padding = 1),
+            nn.BatchNorm2d(down_channels[-1] * 2),
+            nn.ReLU(inplace = True)
+        )
+
+        up_channels = list(reversed(down_channels[1:]))
+        
+        for i in range(num_layers):
+            self.up_blocks.append(UpBlock_v2(up_channels[i] * 2, up_channels[i]))
+
+        self.out = nn.Conv2d(base_channels, out_channels, kernel_size = 1)
+    
 
     def forward(self, x):
-        # pass image through downsampling blocks, retaining skip connections
-        x1_conv, x1_down = self.down1(x)
-        x2_conv, x2_down = self.down2(x1_down)
-        x3_conv, x3_down = self.down3(x2_down)
+        skip_connections = []
 
-        # pass image through bottleneck block
-        x_bottleneck = self.bottleneck(x3_down)
+        for down_block in self.down_blocks:
+            x_conv, x = down_block(x)
+            skip_connections.append(x_conv)
 
-        # pass image through upsampling blocks, maintaining skip connections
-        x3_up = self.up3(x_bottleneck, x3_conv)
-        x2_up = self.up2(x3_up, x2_conv)
-        x1_up = self.up1(x2_up, x1_conv)
+        x = self.bottleneck(x)
 
-        # pass image through output layer and return
-        return self.out(x1_up)
+        for up_block, skip in zip(self.up_blocks, reversed(skip_connections)):
+            x = up_block(x, skip)
+
+        return self.out(x)
     
 
     def training_step(self, batch, _):

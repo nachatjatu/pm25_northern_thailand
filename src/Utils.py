@@ -106,7 +106,9 @@ def init_model(args, loss_fn, pm25_data):
         out_channels=1, 
         lr=args.lr, 
         loss_fn=loss_fn,
-        weight_decay=args.weight_decay
+        weight_decay=args.weight_decay,
+        num_layers=args.num_layers,
+        base_channels=args.base_channels
     )
     
     return model

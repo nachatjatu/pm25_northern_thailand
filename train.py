@@ -1,6 +1,5 @@
 from argparse import ArgumentParser
 from lightning.pytorch.loggers import TensorBoardLogger
-from torch.utils.data import DataLoader
 import lightning as L
 
 import src.Data
@@ -43,7 +42,7 @@ def main(args):
     normalize = src.Transforms.Normalize(mins, maxs, norm_indices)
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
-    train_transform = T.Compose([normalize, standardize, T.RandomCrop(256)])
+    train_transform = T.Compose([normalize, standardize, T.CenterCrop(256)])
 
     val_transform = T.Compose(
         [normalize, standardize, T.Compose(
@@ -68,6 +67,8 @@ def main(args):
     # set up model
     loss_fn = torch.nn.MSELoss()
     model = src.Utils.init_model(args, loss_fn, pm25_data)
+
+    print(model)
         
     # train and validate model
     trainer.fit(model, pm25_data)
@@ -84,6 +85,8 @@ if __name__ == '__main__':
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--max_epochs", type=int, default=100)
     parser.add_argument("--weight_decay", type=float, default=0)
+    parser.add_argument("--num_layers", type=int, default=3)
+    parser.add_argument("--base_channels", type=int, default=64)
 
     args = parser.parse_args()
 
