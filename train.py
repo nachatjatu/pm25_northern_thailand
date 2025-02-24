@@ -75,6 +75,14 @@ def main(args):
     model = src.Utils.init_model(args, loss_fn, pm25_data)
 
     print(model)
+
+    print(f"Memory before forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+    input_tensor = torch.randn(20, 16, 512, 512).cuda()
+
+    # Run forward pass
+    output = model(input_tensor)
+
+    print(f"Memory after forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
         
     # train and validate model
     trainer.fit(model, pm25_data)
