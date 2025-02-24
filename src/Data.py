@@ -68,7 +68,7 @@ class PM25DataModule(L.LightningDataModule):
     def train_dataloader(self):
         return DataLoader(
             dataset=self.train_dataset, 
-            batch_size=self.batch_size, 
+            batch_size=self.batch_size * 5, 
             num_workers=self.num_workers,
             shuffle=True,
         )
