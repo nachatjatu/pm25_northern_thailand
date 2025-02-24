@@ -14,6 +14,8 @@ import torch
 torch.set_printoptions(precision=2, sci_mode=False, linewidth=80)
 
 def main(args):
+    print(f"Allocated: {torch.cuda.memory_allocated() / 1024**2} MB")
+    print(f"Reserved: {torch.cuda.memory_reserved() / 1024**2} MB"
     # set up Logger and Trainer
     exp_name = (f"{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
                 f"/lr{args.lr}_bs{args.batch_size}_nl{args.num_layers}_bc{args.base_channels}"
@@ -44,6 +46,7 @@ def main(args):
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
     train_transform = T.Compose([normalize, standardize, T.RandomCrop(256)])
+    print(train_transform)
 
     val_transform = T.Compose(
         [normalize, standardize, T.Compose(
@@ -52,8 +55,10 @@ def main(args):
             )]
         )]
     )
+    print(val_transform)
 
     test_transform = val_transform
+    print(test_transform)
 
     pm25_data = src.Data.PM25DataModule(
         root=args.root,
