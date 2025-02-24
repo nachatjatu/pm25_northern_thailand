@@ -15,7 +15,9 @@ torch.set_printoptions(precision=2, sci_mode=False, linewidth=80)
 
 def main(args):
     # set up Logger and Trainer
-    exp_name = f"{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
+    exp_name = (f"{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
+                f"/lr{args.lr}_bs{args.batch_size}_nl{args.num_layers}_bc{args.base_channels}"
+                f"/{os.getenv('SLURM_JOB_ID', 'default')}")
 
     # callbacks = None
     callbacks = src.Utils.init_callbacks(args)
@@ -25,8 +27,7 @@ def main(args):
         max_epochs=args.max_epochs,
         logger=logger,
         callbacks=callbacks,
-        gradient_clip_val=0.5,
-        limit_val_batches=1
+        gradient_clip_val=1
     )
 
     # set up data and transformations
@@ -42,7 +43,7 @@ def main(args):
     normalize = src.Transforms.Normalize(mins, maxs, norm_indices)
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
-    train_transform = T.Compose([normalize, standardize, T.CenterCrop(256)])
+    train_transform = T.Compose([normalize, standardize, T.RandomCrop(256)])
 
     val_transform = T.Compose(
         [normalize, standardize, T.Compose(

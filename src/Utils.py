@@ -21,7 +21,7 @@ def init_callbacks(args):
     ckpt_callback = ModelCheckpoint(
         dirpath=(
             f"models/{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
-            f"/lr{args.lr}_bs{args.batch_size}"
+            f"/lr{args.lr}_bs{args.batch_size}_nl{args.num_layers}_bc{args.base_channels}"
             f"/{os.getenv('SLURM_JOB_ID', 'default')}"
         ),
         filename="{epoch:02d}-{val_loss:.4f}",  
