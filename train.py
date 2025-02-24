@@ -73,9 +73,11 @@ def main(args):
     model = src.Utils.init_model(args, loss_fn, pm25_data)
 
     print(model)
-        
-    # train and validate model
-    trainer.fit(model, pm25_data)
+
+    if args.model == 'Persistence':
+        trainer.validate(model, pm25_data)
+    else:
+        trainer.fit(model, pm25_data)
 
 
 if __name__ == '__main__':
