@@ -44,7 +44,13 @@ def main(args):
     normalize = src.Transforms.Normalize(mins, maxs, norm_indices)
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
-    train_transform = T.Compose([normalize, standardize, T.RandomCrop(128)])
+    train_transform = T.Compose(
+        [normalize, standardize, T.Compose(
+            [T.FiveCrop(128), T.Lambda(
+                lambda crops: torch.stack([crop for crop in crops])
+            )]
+        )]
+    )
     print(train_transform)
 
     val_transform = T.Compose(
@@ -56,7 +62,13 @@ def main(args):
     )
     print(val_transform)
 
-    test_transform = val_transform
+    test_transform = T.Compose(
+        [normalize, standardize, T.Compose(
+            [T.FiveCrop(128), T.Lambda(
+                lambda crops: torch.stack([crop for crop in crops])
+            )]
+        )]
+    )
     print(test_transform)
 
     pm25_data = src.Data.PM25DataModule(
