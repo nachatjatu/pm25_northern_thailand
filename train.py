@@ -27,7 +27,8 @@ def main(args):
         max_epochs=args.max_epochs,
         logger=logger,
         callbacks=callbacks,
-        gradient_clip_val=1
+        gradient_clip_val=1,
+        limit_val_batches=1
     )
 
     # set up data and transformations
@@ -43,12 +44,12 @@ def main(args):
     normalize = src.Transforms.Normalize(mins, maxs, norm_indices)
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
-    train_transform = T.Compose([normalize, standardize, T.RandomCrop(256)])
+    train_transform = T.Compose([normalize, standardize, T.RandomCrop(128)])
     print(train_transform)
 
     val_transform = T.Compose(
         [normalize, standardize, T.Compose(
-            [T.FiveCrop(256), T.Lambda(
+            [T.FiveCrop(128), T.Lambda(
                 lambda crops: torch.stack([crop for crop in crops])
             )]
         )]
@@ -69,7 +70,7 @@ def main(args):
     )
 
     # set up model
-    loss_fn = torch.nn.MSELoss()
+    loss_fn = torch.nn.HuberLoss(delta=args.delta)
     model = src.Utils.init_model(args, loss_fn, pm25_data)
 
     print(model)
@@ -93,6 +94,7 @@ if __name__ == '__main__':
     parser.add_argument("--weight_decay", type=float, default=0)
     parser.add_argument("--num_layers", type=int, default=3)
     parser.add_argument("--base_channels", type=int, default=64)
+    parser.add_argument("--delta", type=float, default=1.0)
 
     args = parser.parse_args()
 
