@@ -336,12 +336,14 @@ class DownBlock_v2(nn.Module):
         super(DownBlock_v2, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 
-                      kernel_size = 3, padding = 'same'),
+                      kernel_size = 3, padding = 1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace = True),
             nn.Conv2d(out_channels, out_channels, 
-                      kernel_size = 3, padding = 'same'),
-            nn.BatchNorm2d(out_channels)
+                      kernel_size = 3, padding = 1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace = True)
+
         )
         self.pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
 
@@ -384,11 +386,11 @@ class BottleneckBlock_v2(nn.Module):
         super(BottleneckBlock_v2, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 
-                      kernel_size = 3, padding = 'same'),
+                      kernel_size = 3, padding = 1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace = True),
             nn.Conv2d(out_channels, out_channels, 
-                      kernel_size = 3, padding = 'same'),
+                      kernel_size = 3, padding = 1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace = True)
         )
@@ -429,17 +431,17 @@ class UpBlock_v2(nn.Module):
             out_channels (int): # of output channels
         """
         super(UpBlock_v2, self).__init__()
-        self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, 
+        self.up = nn.ConvTranspose2d(in_channels, out_channels, 
                                      kernel_size = 2, stride = 2)
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 
-                      kernel_size = 3, padding = 'same'),
-            nn.ReLU(inplace = True),
+            nn.Conv2d(out_channels * 2, out_channels, 
+                      kernel_size = 3, padding = 1),
             nn.BatchNorm2d(out_channels),
-            nn.Conv2d(out_channels, out_channels, 
-                      kernel_size = 3, padding = 'same'),
             nn.ReLU(inplace = True),
-            nn.BatchNorm2d(out_channels)
+            nn.Conv2d(out_channels, out_channels, 
+                      kernel_size = 3, padding = 1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace = True)
         )
 
     def forward(self, x, skip):
@@ -485,32 +487,27 @@ class UNet_v2(L.LightningModule):
         self.loss_fn = loss_fn
         self.weight_decay = weight_decay
 
-        self.down1 = DownBlock_v2(in_channels, 32) 
-        self.down2 = DownBlock_v2(32, 64)       
-        # self.down3 = DownBlock_v2(128, 256)
-        self.bottleneck = BottleneckBlock_v2(64, 128)
-        # self.up3 = UpBlock_v2(512, 256)
-        self.up2 = UpBlock_v2(128, 64)
-        self.up1 = UpBlock_v2(64, 32)
-        self.out = nn.Conv2d(32, out_channels, kernel_size = 1)
-
-    # def on_after_backward(self):
-    #     """Called after loss.backward(), before optimizer step."""
-    #     print("Gradient Magnitudes:")
-    #     for name, param in self.named_parameters():
-    #         if param.grad is not None:
-    #             print(f"{name}: {param.grad.norm().item():.4f}")
+        self.down1 = DownBlock_v2(in_channels, 64) 
+        self.down2 = DownBlock_v2(64, 128)       
+        self.down3 = DownBlock_v2(128, 256)
+        self.bottleneck = BottleneckBlock_v2(256, 512)
+        self.up3 = UpBlock_v2(512, 256)
+        self.up2 = UpBlock_v2(256, 128)
+        self.up1 = UpBlock_v2(128, 64)
+        self.out = nn.Conv2d(64, out_channels, kernel_size = 1)
 
     def forward(self, x):
         # pass image through downsampling blocks, retaining skip connections
         x1_conv, x1_down = self.down1(x)
         x2_conv, x2_down = self.down2(x1_down)
+        x3_conv, x3_down = self.down3(x2_down)
 
         # pass image through bottleneck block
-        x_bottleneck = self.bottleneck(x2_down)
+        x_bottleneck = self.bottleneck(x3_down)
 
         # pass image through upsampling blocks, maintaining skip connections
-        x2_up = self.up2(x_bottleneck, x2_conv)
+        x3_up = self.up3(x_bottleneck, x3_conv)
+        x2_up = self.up2(x3_up, x2_conv)
         x1_up = self.up1(x2_up, x1_conv)
 
         # pass image through output layer and return

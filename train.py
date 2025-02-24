@@ -26,7 +26,8 @@ def main(args):
         max_epochs=args.max_epochs,
         logger=logger,
         callbacks=callbacks,
-        gradient_clip_val=0.5
+        gradient_clip_val=0.5,
+        limit_val_batches=1
     )
 
     # set up data and transformations
@@ -42,7 +43,9 @@ def main(args):
     normalize = src.Transforms.Normalize(mins, maxs, norm_indices)
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
-    train_transform = T.Compose(
+    train_transform = T.Compose([normalize, standardize, T.RandomCrop(256)])
+
+    val_transform = T.Compose(
         [normalize, standardize, T.Compose(
             [T.FiveCrop(256), T.Lambda(
                 lambda crops: torch.stack([crop for crop in crops])
@@ -50,20 +53,7 @@ def main(args):
         )]
     )
 
-    val_transform = train_transform
-
-    test_transform = train_transform
-
-    # test norm, std
-    """
-    train_dataset = src.Data.PM25Dataset(path=os.path.join(args.root, 'train'), transform=T.Compose([normalize, standardize]))
-    dataloader = DataLoader(
-        train_dataset, 
-        batch_size=args.batch_size, 
-        num_workers=args.num_workers
-    )
-    means, stds, mins, maxs = src.Utils.compute_dataset_statistics(dataloader)
-    """
+    test_transform = val_transform
 
     pm25_data = src.Data.PM25DataModule(
         root=args.root,
@@ -86,7 +76,7 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
 
-    parser.add_argument('--model', type=str, default='UNet_v1')
+    parser.add_argument('--model', type=str, default='UNet_v2')
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument("--num_workers", type=int, default=0) 
     parser.add_argument("--batch_size", type=int, default=4) 
