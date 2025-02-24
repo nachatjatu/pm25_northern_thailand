@@ -80,6 +80,7 @@ def main(args):
     input_tensor = torch.randn(20, 16, 512, 512).cuda()
 
     # Run forward pass
+    model = model.cuda()
     output = model(input_tensor)
 
     print(f"Memory after forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
