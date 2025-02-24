@@ -14,8 +14,6 @@ import torch
 torch.set_printoptions(precision=2, sci_mode=False, linewidth=80)
 
 def main(args):
-    free_memory = torch.cuda.mem_get_info()[0] / 1024**2
-    print(f"Available GPU memory: {free_memory:.2f} MB")
     # set up Logger and Trainer
     exp_name = (f"{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
                 f"/lr{args.lr}_bs{args.batch_size}_nl{args.num_layers}_bc{args.base_channels}"
@@ -75,15 +73,6 @@ def main(args):
     model = src.Utils.init_model(args, loss_fn, pm25_data)
 
     print(model)
-
-    print(f"Memory before forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
-    input_tensor = torch.randn(20, 16, 512, 512).cuda()
-
-    # Run forward pass
-    model = model.cuda()
-    output = model(input_tensor)
-
-    print(f"Memory after forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
         
     # train and validate model
     trainer.fit(model, pm25_data)
