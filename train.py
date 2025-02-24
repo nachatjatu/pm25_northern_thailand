@@ -75,6 +75,7 @@ def main(args):
     model = src.Utils.init_model(args, loss_fn, pm25_data)
 
     print(model)
+    print(f"After model load: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
         
     # train and validate model
     trainer.fit(model, pm25_data)
