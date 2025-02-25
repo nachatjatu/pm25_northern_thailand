@@ -12,7 +12,6 @@ import os
 import torch
                    
 torch.set_printoptions(precision=2, sci_mode=False, linewidth=80)
-torch.set_float32_matmul_precision('high')
 
 def main(args):
     # set up Logger and Trainer
