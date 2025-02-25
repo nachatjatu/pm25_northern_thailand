@@ -336,11 +336,13 @@ class DownBlock_v2(nn.Module):
         super(DownBlock_v2, self).__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 
-                      kernel_size = 3, padding = 1),
+                      kernel_size=3, padding=0),
+            nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace = True),
             nn.Conv2d(out_channels, out_channels, 
-                      kernel_size = 3, padding = 1),
+                      kernel_size=3, padding=0),
+            nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace = True)
 
@@ -390,11 +392,13 @@ class UpBlock_v2(nn.Module):
                                      kernel_size = 2, stride = 2)
         self.conv = nn.Sequential(
             nn.Conv2d(out_channels * 2, out_channels, 
-                      kernel_size = 3, padding = 1),
+                      kernel_size=3, padding=0),
+            nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace = True),
             nn.Conv2d(out_channels, out_channels, 
-                      kernel_size = 3, padding = 1),
+                      kernel_size=3, padding=0),
+            nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace = True)
         )
@@ -453,11 +457,13 @@ class UNet_v2(L.LightningModule):
 
         self.bottleneck = nn.Sequential(
             nn.Conv2d(down_channels[-1], down_channels[-1] * 2, 
-                      kernel_size = 3, padding = 1),
+                      kernel_size = 3, padding = 0),
+            nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(down_channels[-1] * 2),
             nn.ReLU(inplace = True),
             nn.Conv2d(down_channels[-1] * 2, down_channels[-1] * 2, 
-                      kernel_size = 3, padding = 1),
+                      kernel_size = 3, padding = 0),
+            nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(down_channels[-1] * 2),
             nn.ReLU(inplace = True)
         )

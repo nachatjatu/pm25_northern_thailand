@@ -19,7 +19,6 @@ def main(args):
                 f"/lr{args.lr}_bs{args.batch_size}_nl{args.num_layers}_bc{args.base_channels}"
                 f"/{os.getenv('SLURM_JOB_ID', 'default')}")
 
-    # callbacks = None
     callbacks = src.Utils.init_callbacks(args)
     logger = TensorBoardLogger(save_dir="logs", name=exp_name)
 
@@ -27,8 +26,7 @@ def main(args):
         max_epochs=args.max_epochs,
         logger=logger,
         callbacks=callbacks,
-        gradient_clip_val=1,
-        limit_val_batches=1
+        gradient_clip_val=1
     )
 
     # set up data and transformations
@@ -45,11 +43,7 @@ def main(args):
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
     train_transform = T.Compose(
-        [normalize, standardize, T.Compose(
-            [T.FiveCrop(128), T.Lambda(
-                lambda crops: torch.stack([crop for crop in crops])
-            )]
-        )]
+        [normalize, standardize, T.RandomCrop(128)]
     )
     print(train_transform)
 
@@ -82,7 +76,8 @@ def main(args):
     )
 
     # set up model
-    loss_fn = torch.nn.HuberLoss(delta=args.delta)
+    # loss_fn = torch.nn.HuberLoss(delta=args.delta)
+    loss_fn = torch.nn.MSELoss()
     model = src.Utils.init_model(args, loss_fn, pm25_data)
 
     print(model)
