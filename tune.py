@@ -18,7 +18,7 @@ import torch
                    
 torch.set_printoptions(precision=2, sci_mode=False, linewidth=80)
 
-def init_model(args, loss_fn, pm25_data, lr, weight_decay):
+def init_model(args, loss_fn, pm25_data, num_layers, lr, weight_decay):
     pm25_data.setup()
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
@@ -31,7 +31,7 @@ def init_model(args, loss_fn, pm25_data, lr, weight_decay):
         lr=lr, 
         loss_fn=loss_fn,
         weight_decay=weight_decay,
-        num_layers=args.num_layers,
+        num_layers=num_layers,
         base_channels=args.base_channels
     )
     
@@ -41,7 +41,7 @@ def init_model(args, loss_fn, pm25_data, lr, weight_decay):
 def objective(trial, args):
     # Suggest values for learning rate and Huber delta
     lr = trial.suggest_loguniform("lr", 1e-5, 1e-2)
-    huber_delta = trial.suggest_uniform("huber_delta", 1.0, 10.0)
+    num_layers = trial.suggest_int("num_layers", 1, 3)
     weight_decay = trial.suggest_loguniform("weight_decay", 1e-6, 1e-2)
 
 
@@ -121,8 +121,8 @@ def objective(trial, args):
     )
 
     # set up model
-    loss_fn = torch.nn.HuberLoss(delta=huber_delta)
-    model = init_model(args, loss_fn, pm25_data, lr, weight_decay)
+    loss_fn = torch.nn.MSELoss()
+    model = init_model(args, loss_fn, pm25_data, num_layers, lr, weight_decay)
 
     print(model)
 

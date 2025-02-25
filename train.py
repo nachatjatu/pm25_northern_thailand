@@ -76,7 +76,7 @@ def main(args):
     )
 
     # set up model
-    loss_fn = torch.nn.HuberLoss(delta=args.delta)
+    loss_fn = torch.nn.MSELoss()
     model = src.Utils.init_model(args, loss_fn, pm25_data)
 
     print(model)
