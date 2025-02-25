@@ -18,7 +18,7 @@ def init_callbacks(args, path):
         verbose=True
     )
     ckpt_callback = ModelCheckpoint(
-        dirpath='models'+path,
+        dirpath='models/'+path,
         filename="{epoch:02d}-{val_loss:.4f}",  
         monitor="val_loss",          
         save_top_k=3,                
