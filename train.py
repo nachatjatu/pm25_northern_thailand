@@ -15,11 +15,11 @@ torch.set_printoptions(precision=2, sci_mode=False, linewidth=80)
 
 def main(args):
     # set up Logger and Trainer
-    exp_name = (f"{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
+    exp_name = (f"{args.model}/{os.getenv('SLURM_JOB_ID', 'default')}"
                 f"/lr{args.lr}_bs{args.batch_size}_nl{args.num_layers}_bc{args.base_channels}"
                 f"/{os.getenv('SLURM_JOB_ID', 'default')}")
 
-    callbacks = src.Utils.init_callbacks(args)
+    callbacks = src.Utils.init_callbacks(args, exp_name)
     logger = TensorBoardLogger(save_dir="logs", name=exp_name)
 
     trainer = L.Trainer(

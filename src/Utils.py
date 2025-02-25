@@ -10,7 +10,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from torch.utils.data import DataLoader
 import src
 
-def init_callbacks(args):
+def init_callbacks(args, path):
     es_callback = EarlyStopping(
         monitor="val_loss",
         patience=args.patience,  
@@ -18,11 +18,7 @@ def init_callbacks(args):
         verbose=True
     )
     ckpt_callback = ModelCheckpoint(
-        dirpath=(
-            f"models/{args.model}_job{os.getenv('SLURM_JOB_ID', 'default')}"
-            f"/lr{args.lr}_bs{args.batch_size}_nl{args.num_layers}_bc{args.base_channels}"
-            f"/{os.getenv('SLURM_JOB_ID', 'default')}"
-        ),
+        dirpath='models'+path,
         filename="{epoch:02d}-{val_loss:.4f}",  
         monitor="val_loss",          
         save_top_k=3,                
