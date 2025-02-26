@@ -82,7 +82,7 @@ def main(args):
 
     print(model)
 
-    if args.model == 'Persistence':
+    if args.model == 'Persistence' or args.mode == 'val':
         trainer.validate(model, pm25_data)
     else:
         trainer.fit(model, pm25_data)
@@ -90,7 +90,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-
+    parser.add_argument('--mode', type=str, default='train')
     parser.add_argument("--checkpoint", type=str, default=None)
     parser.add_argument('--model', type=str, default='UNet_v2')
     parser.add_argument('--lr', type=float, default=1e-4)
