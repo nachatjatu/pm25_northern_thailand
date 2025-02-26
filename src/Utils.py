@@ -89,16 +89,16 @@ def collate_fn(batch):
     return inputs, outputs
 
 
-def init_model(args, loss_fn, pm25_data, checkpoint):
+def init_model(args, loss_fn, pm25_data):
     pm25_data.setup()
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
 
     model_class = getattr(src.Models, args.model)
 
-    if checkpoint:
+    if args.checkpoint:
         model = model_class.load_from_checkpoint(
-            checkpoint,
+            args.checkpoint,
             in_channels=in_channels, 
             out_channels=1, 
             lr=args.lr, 
