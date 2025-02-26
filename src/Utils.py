@@ -89,23 +89,34 @@ def collate_fn(batch):
     return inputs, outputs
 
 
-def init_model(args, loss_fn, pm25_data):
+def init_model(args, loss_fn, pm25_data, checkpoint):
     pm25_data.setup()
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
 
     model_class = getattr(src.Models, args.model)
 
-    model = model_class(
-        in_channels=in_channels, 
-        out_channels=1, 
-        lr=args.lr, 
-        loss_fn=loss_fn,
-        weight_decay=args.weight_decay,
-        num_layers=args.num_layers,
-        base_channels=args.base_channels
-    )
-    
+    if checkpoint:
+        model = model_class.load_from_checkpoint(
+            checkpoint,
+            in_channels=in_channels, 
+            out_channels=1, 
+            lr=args.lr, 
+            loss_fn=loss_fn,
+            weight_decay=args.weight_decay,
+            num_layers=args.num_layers,
+            base_channels=args.base_channels
+        )
+    else:
+        model = model_class(
+            in_channels=in_channels, 
+            out_channels=1, 
+            lr=args.lr, 
+            loss_fn=loss_fn,
+            weight_decay=args.weight_decay,
+            num_layers=args.num_layers,
+            base_channels=args.base_channels
+        )
     return model
 
 def remove_first_band(data_dir):

@@ -77,6 +77,7 @@ def main(args):
 
     # set up model
     loss_fn = torch.nn.MSELoss()
+
     model = src.Utils.init_model(args, loss_fn, pm25_data)
 
     print(model)
@@ -90,6 +91,7 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
 
+    parser.add_argument("--checkpoint", type=str, default=None)
     parser.add_argument('--model', type=str, default='UNet_v2')
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument("--num_workers", type=int, default=0) 
