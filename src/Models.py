@@ -71,7 +71,6 @@ class SimpleConv_v2(L.LightningModule):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        print(loss.clone().detach())
         self.log("train_loss", loss, on_step=False, on_epoch=True)
         return loss
     
