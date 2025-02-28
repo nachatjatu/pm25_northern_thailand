@@ -30,8 +30,9 @@ def main(args):
     )
 
     # set up data and transformations
-    std_indices = [0, 6, 7, 8, 9, 10, 11, 13, 15, 16]
-    norm_indices = [1, 2, 3, 4, 5, 12, 14]
+    band_indices = [0, 1, 2, 3, 4, 5, 7, 8, 9]
+    std_indices = [0, 1, 2, 8, 9]
+    norm_indices = [3, 4, 5, 6, 7]
 
     means, stds, mins, maxs = src.Utils.init_norm_std(args)
     print('Means:\n', means)
@@ -43,26 +44,14 @@ def main(args):
     standardize = src.Transforms.Standardize(means, stds, std_indices)
 
     train_transform = T.Compose(
-        [normalize, standardize, T.RandomCrop(128)]
+        [normalize, standardize]
     )
     print(train_transform)
 
-    val_transform = T.Compose(
-        [normalize, standardize, T.Compose(
-            [T.FiveCrop(128), T.Lambda(
-                lambda crops: torch.stack([crop for crop in crops])
-            )]
-        )]
-    )
+    val_transform = train_transform
     print(val_transform)
 
-    test_transform = T.Compose(
-        [normalize, standardize, T.Compose(
-            [T.FiveCrop(128), T.Lambda(
-                lambda crops: torch.stack([crop for crop in crops])
-            )]
-        )]
-    )
+    test_transform = train_transform
     print(test_transform)
 
     pm25_data = src.Data.PM25DataModule(
@@ -72,7 +61,8 @@ def main(args):
         train_transform=train_transform,
         val_transform=val_transform,
         test_transform=test_transform,
-        collate_fn=src.Utils.collate_fn
+        collate_fn=src.Utils.collate_fn,
+        select_indices=band_indices
     )
 
     # set up model

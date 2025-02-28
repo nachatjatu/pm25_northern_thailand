@@ -65,20 +65,20 @@ class PM25DataModule(L.LightningDataModule):
         self.val_dataset = PM25Dataset(
             path=os.path.join(self.root, 'val'), 
             transform=self.val_transform,
-            is_fivecrop=True,
+            # is_fivecrop=True,
             select_indices=self.select_indices
         )
         self.test_dataset = PM25Dataset(
             path=os.path.join(self.root, 'test'), 
             transform=self.test_transform,
-            is_fivecrop=True,
+            # is_fivecrop=True,
             select_indices=self.select_indices
         )
 
     def train_dataloader(self):
         return DataLoader(
             dataset=self.train_dataset, 
-            batch_size=self.batch_size * 5, 
+            batch_size=self.batch_size, 
             num_workers=self.num_workers,
             shuffle=True,
         )
@@ -88,7 +88,7 @@ class PM25DataModule(L.LightningDataModule):
             dataset=self.val_dataset, 
             batch_size=self.batch_size, 
             num_workers=self.num_workers,
-            collate_fn=self.collate_fn
+            # collate_fn=self.collate_fn
         )
     
     def test_dataloader(self):
@@ -96,5 +96,5 @@ class PM25DataModule(L.LightningDataModule):
             dataset=self.test_dataset, 
             batch_size=self.batch_size,
             num_workers=self.num_workers,
-            collate_fn=self.collate_fn
+            # collate_fn=self.collate_fn
         )
