@@ -26,7 +26,7 @@ def main(args):
         max_epochs=args.max_epochs,
         logger=logger,
         callbacks=callbacks,
-        gradient_clip_val=1
+        gradient_clip_val=1,
     )
 
     # set up data and transformations
