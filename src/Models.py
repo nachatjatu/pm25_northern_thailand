@@ -495,15 +495,18 @@ class UNet_v2(L.LightningModule):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.logger.experiment.add_scalar("train_loss", loss, self.global_step)
+
+        self.logger.experiment.add_scalars('loss', {'train': loss},self.global_step)
         self.log("train_loss", loss, on_epoch=True)
+        
         return loss
     
     def validation_step(self, batch, _):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
+
         loss = self.loss_fn(pred_pm25, true_pm25)
-        self.logger.experiment.add_scalar("val_loss", loss, self.global_step)
+        self.logger.experiment.add_scalars('loss', {'valid': loss},self.global_step)
         self.log("val_loss", loss, on_epoch=True)
     
     def configure_optimizers(self):
