@@ -25,7 +25,8 @@ def main(args):
     trainer = L.Trainer(
         max_epochs=args.max_epochs,
         logger=logger,
-        callbacks=callbacks,
+        # callbacks=callbacks,
+        checkpoint_callback=False,
         gradient_clip_val=1,
     )
 
