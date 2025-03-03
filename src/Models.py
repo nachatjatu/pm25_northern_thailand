@@ -464,13 +464,13 @@ class UNet_v2(L.LightningModule):
                       kernel_size = 3, padding = 0),
             nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(down_channels[-1] * 2),
-            nn.Dropout2d(0.2),
+            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True),
             nn.Conv2d(down_channels[-1] * 2, down_channels[-1] * 2, 
                       kernel_size = 3, padding = 0),
             nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(down_channels[-1] * 2),
-            nn.Dropout2d(0.2),
+            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True)
         )
 
@@ -522,4 +522,15 @@ class UNet_v2(L.LightningModule):
             weight_decay=self.weight_decay
         )
         return optimizer
+    
+    def on_train_epoch_end(self):
+        train_loss = self.trainer.callback_metrics.get("train_loss_epoch")
+        val_loss = self.trainer.callback_metrics.get("val_loss")
+
+        if train_loss is not None and val_loss is not None:
+            self.logger.experiment.add_scalars(
+                "Losses",
+                {"Train Loss": train_loss, "Validation Loss": val_loss},
+                self.current_epoch
+            )
     

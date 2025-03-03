@@ -89,7 +89,7 @@ def collate_fn(batch):
     return inputs, outputs
 
 
-def init_model(args, loss_fn, pm25_data):
+def init_model(args, loss_fn, pm25_data, out_channels):
     pm25_data.setup()
     train_dataloader = pm25_data.train_dataloader()
     in_channels = next(iter(train_dataloader))[0].shape[1]
