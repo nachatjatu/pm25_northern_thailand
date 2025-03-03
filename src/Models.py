@@ -338,11 +338,13 @@ class DownBlock_v2(nn.Module):
                       kernel_size=3, padding=0, bias=False),
             nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(out_channels),
+            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size=3, padding=0, bias=False),
             nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(out_channels),
+            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True)
 
         )
@@ -394,11 +396,13 @@ class UpBlock_v2(nn.Module):
                       kernel_size=3, padding=0, bias=False),
             nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(out_channels),
+            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size=3, padding=0, bias=False),
             nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(out_channels),
+            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True)
         )
 
@@ -460,11 +464,13 @@ class UNet_v2(L.LightningModule):
                       kernel_size = 3, padding = 0),
             nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(down_channels[-1] * 2),
+            nn.Dropout2d(0.2),
             nn.ReLU(inplace = True),
             nn.Conv2d(down_channels[-1] * 2, down_channels[-1] * 2, 
                       kernel_size = 3, padding = 0),
             nn.ReflectionPad2d(padding=1),
             nn.BatchNorm2d(down_channels[-1] * 2),
+            nn.Dropout2d(0.2),
             nn.ReLU(inplace = True)
         )
 
