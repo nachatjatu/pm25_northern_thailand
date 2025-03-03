@@ -100,7 +100,7 @@ def init_model(args, loss_fn, pm25_data, out_channels):
         model = model_class.load_from_checkpoint(
             args.checkpoint,
             in_channels=in_channels, 
-            out_channels=1, 
+            out_channels=out_channels, 
             lr=args.lr, 
             loss_fn=loss_fn,
             weight_decay=args.weight_decay,
@@ -110,7 +110,7 @@ def init_model(args, loss_fn, pm25_data, out_channels):
     else:
         model = model_class(
             in_channels=in_channels, 
-            out_channels=1, 
+            out_channels=out_channels, 
             lr=args.lr, 
             loss_fn=loss_fn,
             weight_decay=args.weight_decay,

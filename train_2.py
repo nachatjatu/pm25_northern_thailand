@@ -66,9 +66,9 @@ def main(args):
     )
 
     # set up model
-    loss_fn = torch.nn.MSELoss()
+    loss_fn = torch.nn.GaussianNLLLoss()
 
-    model = src.Utils.init_model(args, loss_fn, pm25_data, 1)
+    model = src.Utils.init_model(args, loss_fn, pm25_data, 2)
 
     print(model)
 
