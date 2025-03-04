@@ -2,7 +2,8 @@
 import torch
 from torch import nn, optim
 import lightning as L
-import torchvision.transforms as T
+import torchvision.transforms.functional as F
+
 
 class Persistence(L.LightningModule):
     def __init__(self, in_channels, out_channels, loss_fn, lr, weight_decay, num_layers, base_channels):
@@ -516,7 +517,118 @@ class UNet_v2(L.LightningModule):
                 {"Train Loss": train_loss, "Validation Loss": val_loss},
                 self.current_epoch
             )
+
+
+class DownBlock_v3(nn.Module):
+    """A DownBlock module implementation for a U-Net
+
+    DownBlock implements one U-Net downsampling block, consisting of two
+    convolutions (w/ same padding) followed by a max pool. 
+
+    Attributes:
+        in_channels (int):  # of input channels
+        out_channels (int): # of output channels 
     
+    Methods:
+        forward(x): passes input through DownBlock, returns output tensor
+    """
+    def __init__(self, in_channels, out_channels):
+        """Initializes DownBlock
+
+        Args:
+            in_channels (int):  # of input channels
+            out_channels (int): # of output channels
+        """
+        super(DownBlock_v3, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 
+                      kernel_size=3, padding='valid', bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(out_channels, out_channels, 
+                      kernel_size=3, padding='valid', bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace = True)
+
+        )
+        self.pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
+
+    def forward(self, x):
+        """Performs forward pass on an input
+
+        Args:
+            x (torch.Tensor):   input tensor of shape 
+                                (batch_size, in_channels, height, width)
+
+        Returns:
+            torch.Tensor, torch.Tensor: output tensors after convolution and
+                                        max pooling, respectively
+        """
+        x_conv = self.conv(x)
+        x_down = self.pool(x_conv)
+        return x_conv, x_down 
+
+
+class UpBlock_v3(nn.Module):
+    """A UpBlock module implementation for a U-Net
+
+    UpBlock implements one U-Net upsampling block, consisting of a 
+    deconvolution followed by concatenation with a skip connection and
+    two convolutions (w/ same padding).
+
+    Attributes:
+        in_channels (int):      # of input channels
+        out_channels (int):     # of output channels 
+        skip (torch.tensor):    Skip connection tensor
+    
+    Methods:
+        forward(x, skip): Passes inputs through UpBlock, returns output tensor
+    """
+    def __init__(self, in_channels, out_channels):
+        """Initializes UpBlock
+
+        Args:
+            in_channels (int):  # of input channels
+            out_channels (int): # of output channels
+        """
+        super(UpBlock_v3, self).__init__()
+        self.up = nn.ConvTranspose2d(in_channels, out_channels, 
+                                     kernel_size = 2, stride = 2)
+        self.conv = nn.Sequential(
+            nn.Conv2d(out_channels * 2, out_channels, 
+                      kernel_size=3, padding='valid', bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(out_channels, out_channels, 
+                      kernel_size=3, padding='valid', bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace = True)
+        )
+
+    def forward(self, x, skip):
+        """Performs forward pass on an input and skip connection 
+
+        Args:
+            x (torch.tensor):       Input tensor of shape 
+                                    (batch_size, in_channels, height, width)
+            skip (torch.tensor):    Skip connection tensor of shape
+                                    (batch_size, in_channels, height, width)
+
+        Returns:
+            torch.tensor:   Output tensor after deconvolution, concatenation,
+                            and convolutions
+        """
+        x = self.up(x)
+
+        # crop skip connection to fit concat
+        skip_cropped = F.center_crop(skip, x.shape[-1])
+
+        x = torch.cat((x, skip_cropped), dim = 1)
+        x = self.conv(x)
+        return x
+    
+
+class UNet_v3(L.LightningModule):
     """
     A U-Net implementation for day-to-day PM2.5 image prediction using
     PyTorch Lightning.
@@ -534,6 +646,41 @@ class UNet_v2(L.LightningModule):
         validation_step(self, batch, _): Performs one step in the val loop
         test_step(self, batch, _): Performs one step in the testing loop
     """
+    def __init__(self, in_channels, out_channels, lr, loss_fn, 
+                 weight_decay, base_channels=64, num_layers=2):
+        super(UNet_v3, self).__init__()
+        self.lr = lr
+        self.loss_fn = loss_fn
+        self.weight_decay = weight_decay
+        self.num_layers = num_layers
+        self.out_channels = out_channels
+
+        self.down_blocks = nn.ModuleList()
+        self.up_blocks = nn.ModuleList()
+
+        down_channels = [in_channels] + [base_channels * (2 ** i) for i in range(num_layers)]
+
+        for i in range(num_layers):
+            self.down_blocks.append(DownBlock_v3(down_channels[i], down_channels[i+1]))
+
+        self.bottleneck = nn.Sequential(
+            nn.Conv2d(down_channels[-1], down_channels[-1] * 2, 
+                      kernel_size = 3, padding = 'valid'),
+            nn.BatchNorm2d(down_channels[-1] * 2),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(down_channels[-1] * 2, down_channels[-1] * 2, 
+                      kernel_size = 3, padding = 'valid'),
+            nn.BatchNorm2d(down_channels[-1] * 2),
+            nn.ReLU(inplace = True)
+        )
+
+        up_channels = list(reversed(down_channels[1:]))
+        
+        for i in range(num_layers):
+            self.up_blocks.append(UpBlock_v3(up_channels[i] * 2, up_channels[i]))
+
+        self.out = nn.Conv2d(base_channels, out_channels, kernel_size = 1)
+    
 
     def forward(self, x):
         skip_connections = []
@@ -548,16 +695,28 @@ class UNet_v2(L.LightningModule):
             x = up_block(x, skip)
 
         x = self.out(x)
-        x_mean, x_var = x[0], torch.nn.functional.softplus(x[1])
-        return x_mean, x_var
+
+        # handle NLL loss by returning means, vars >= 0
+        if self.out_channels == 2:
+            means, vars = x[0], nn.functional.relu(x[1])
+            return means, vars
+        
+        # otherwise, just return mean estimate
+        return x
     
 
     def training_step(self, batch, _):
         input_bands, true_pm25 = batch
-        pred = self(input_bands)
-        mean = pred[0]
-        var = pred[1]
-        loss = self.loss_fn(mean, true_pm25, var)
+        
+        pred_pm25 = self(input_bands)
+        true_pm25_cropped = F.center_crop(true_pm25, pred_pm25.shape[-1])
+
+        # handle NLL loss
+        if self.out_channels == 2:
+            pred_means, pred_vars = pred_pm25
+            loss = self.loss_fn(pred_means, true_pm25_cropped, pred_vars)
+        else:
+            loss = self.loss_fn(pred_pm25, true_pm25_cropped)
 
         self.log("train_loss", loss, on_epoch=True)
         
@@ -565,19 +724,23 @@ class UNet_v2(L.LightningModule):
     
     def validation_step(self, batch, _):
         input_bands, true_pm25 = batch
-        pred = self(input_bands)
-        mean = pred[0]
-        var = pred[1]
+        
+        pred_pm25 = self(input_bands)
+        true_pm25_cropped = F.center_crop(true_pm25, pred_pm25.shape[-1])
 
-        loss = self.loss_fn(mean, true_pm25, var)
-
+        # handle NLL loss
+        if self.out_channels == 2:
+            pred_means, pred_vars = pred_pm25
+            loss = self.loss_fn(pred_means, true_pm25_cropped, pred_vars)
+        else:
+            loss = self.loss_fn(pred_pm25, true_pm25_cropped)
+            
         self.log("val_loss", loss, on_epoch=True)
     
     def configure_optimizers(self):
-        optimizer = optim.AdamW(
+        optimizer = optim.Adam(
             self.parameters(), 
-            lr=self.lr, 
-            weight_decay=self.weight_decay
+            lr=self.lr
         )
         return optimizer
     
