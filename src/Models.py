@@ -733,7 +733,6 @@ class UNet_v3(L.LightningModule):
             loss = self.loss_fn(pred_pm25, true_pm25_cropped)
 
         self.log("train_loss", loss, on_epoch=True)
-        print(loss)
         return loss
     
     def validation_step(self, batch, _):
