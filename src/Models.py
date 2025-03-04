@@ -310,8 +310,6 @@ class UNet_v1(L.LightningModule):
         return optimizer
     
 
-
-
 class DownBlock_v2(nn.Module):
     """A DownBlock module implementation for a U-Net
 
@@ -337,12 +335,10 @@ class DownBlock_v2(nn.Module):
             nn.Conv2d(in_channels, out_channels, 
                       kernel_size=3, padding='same', bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size=3, padding='same', bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True)
 
         )
@@ -393,12 +389,10 @@ class UpBlock_v2(nn.Module):
             nn.Conv2d(out_channels * 2, out_channels, 
                       kernel_size=3, padding='same', bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True),
             nn.Conv2d(out_channels, out_channels, 
                       kernel_size=3, padding='same', bias=False),
             nn.BatchNorm2d(out_channels),
-            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True)
         )
 
@@ -459,12 +453,10 @@ class UNet_v2(L.LightningModule):
             nn.Conv2d(down_channels[-1], down_channels[-1] * 2, 
                       kernel_size = 3, padding = 'same'),
             nn.BatchNorm2d(down_channels[-1] * 2),
-            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True),
             nn.Conv2d(down_channels[-1] * 2, down_channels[-1] * 2, 
                       kernel_size = 3, padding = 'same'),
             nn.BatchNorm2d(down_channels[-1] * 2),
-            nn.Dropout2d(0.1),
             nn.ReLU(inplace = True)
         )
 
@@ -508,10 +500,9 @@ class UNet_v2(L.LightningModule):
         self.log("val_loss", loss, on_epoch=True)
     
     def configure_optimizers(self):
-        optimizer = optim.AdamW(
+        optimizer = optim.Adam(
             self.parameters(), 
-            lr=self.lr, 
-            weight_decay=self.weight_decay
+            lr=self.lr
         )
         return optimizer
     
@@ -526,7 +517,6 @@ class UNet_v2(L.LightningModule):
                 self.current_epoch
             )
     
-class UNet_v3(UNet_v2):
     """
     A U-Net implementation for day-to-day PM2.5 image prediction using
     PyTorch Lightning.
