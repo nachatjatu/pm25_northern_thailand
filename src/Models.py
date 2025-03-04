@@ -12,12 +12,25 @@ class Persistence(L.LightningModule):
         self.loss_fn = loss_fn
 
     def forward(self, x):
+        if self.out_channels == 2:
+            means = torch.zeros(x.shape[0], self.out_channels, 88, 88, device=x.device)
+            vars = torch.ones_like(means)
+            return means, vars
+
         return torch.zeros(x.shape[0], self.out_channels, x.shape[2], x.shape[3], device=x.device)
     
     def validation_step(self, batch, _):
         input_bands, true_pm25 = batch
         pred_pm25 = self(input_bands)
-        loss = self.loss_fn(pred_pm25, true_pm25)
+
+        if self.out_channels == 2:
+            means, vars = pred_pm25
+            true_pm25_cropped = F.center_crop(true_pm25, 88)
+            loss = self.loss_fn(means, true_pm25_cropped, vars)
+        else:  
+            loss = self.loss_fn(pred_pm25, true_pm25)
+        
+        print(loss)
         self.log("val_loss", loss, on_epoch=True)
 
 
@@ -698,7 +711,7 @@ class UNet_v3(L.LightningModule):
 
         # handle NLL loss by returning means, vars >= 0
         if self.out_channels == 2:
-            means, vars = x[0], nn.functional.relu(x[1])
+            means, vars = x[:, 0], torch.exp(x[:, 1])
             return means, vars
         
         # otherwise, just return mean estimate
@@ -720,7 +733,7 @@ class UNet_v3(L.LightningModule):
             loss = self.loss_fn(pred_pm25, true_pm25_cropped)
 
         self.log("train_loss", loss, on_epoch=True)
-        
+        print(loss)
         return loss
     
     def validation_step(self, batch, _):
