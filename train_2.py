@@ -25,8 +25,7 @@ def main(args):
     trainer = L.Trainer(
         max_epochs=args.max_epochs,
         logger=logger,
-        # callbacks=callbacks,
-        checkpoint_callback=False,
+        callbacks=callbacks,
         gradient_clip_val=1,
     )
 
@@ -83,7 +82,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--mode', type=str, default='train')
     parser.add_argument("--checkpoint", type=str, default=None)
-    parser.add_argument('--model', type=str, default='UNet_v2')
+    parser.add_argument('--model', type=str, default='UNet_v3')
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument("--num_workers", type=int, default=0) 
     parser.add_argument("--batch_size", type=int, default=4) 

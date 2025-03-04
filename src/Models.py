@@ -709,13 +709,14 @@ class UNet_v3(L.LightningModule):
         input_bands, true_pm25 = batch
         
         pred_pm25 = self(input_bands)
-        true_pm25_cropped = F.center_crop(true_pm25, pred_pm25.shape[-1])
 
         # handle NLL loss
         if self.out_channels == 2:
+            true_pm25_cropped = F.center_crop(true_pm25, pred_pm25[0].shape[-1])
             pred_means, pred_vars = pred_pm25
             loss = self.loss_fn(pred_means, true_pm25_cropped, pred_vars)
         else:
+            true_pm25_cropped = F.center_crop(true_pm25, pred_pm25.shape[-1])
             loss = self.loss_fn(pred_pm25, true_pm25_cropped)
 
         self.log("train_loss", loss, on_epoch=True)
@@ -726,13 +727,14 @@ class UNet_v3(L.LightningModule):
         input_bands, true_pm25 = batch
         
         pred_pm25 = self(input_bands)
-        true_pm25_cropped = F.center_crop(true_pm25, pred_pm25.shape[-1])
 
         # handle NLL loss
         if self.out_channels == 2:
+            true_pm25_cropped = F.center_crop(true_pm25, pred_pm25[0].shape[-1])
             pred_means, pred_vars = pred_pm25
             loss = self.loss_fn(pred_means, true_pm25_cropped, pred_vars)
         else:
+            true_pm25_cropped = F.center_crop(true_pm25, pred_pm25.shape[-1])
             loss = self.loss_fn(pred_pm25, true_pm25_cropped)
             
         self.log("val_loss", loss, on_epoch=True)
