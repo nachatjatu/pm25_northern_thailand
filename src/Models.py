@@ -566,6 +566,7 @@ class DownBlock_v3(nn.Module):
         )
         self.pool = nn.MaxPool2d(kernel_size = 2, stride = 2)
 
+
     def forward(self, x):
         """Performs forward pass on an input
 
@@ -617,6 +618,7 @@ class UpBlock_v3(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace = True)
         )
+
 
     def forward(self, x, skip):
         """Performs forward pass on an input and skip connection 
@@ -693,6 +695,19 @@ class UNet_v3(L.LightningModule):
             self.up_blocks.append(UpBlock_v3(up_channels[i] * 2, up_channels[i]))
 
         self.out = nn.Conv2d(base_channels, out_channels, kernel_size = 1)
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Iterate over all modules in this block
+        for m in self.modules():
+            # Initialize Conv2d and ConvTranspose2d layers
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            # Initialize BatchNorm2d layers
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
     
 
     def forward(self, x):
