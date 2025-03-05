@@ -59,13 +59,10 @@ class RandomRotate:
         if angle == 0:
             return u_band, v_band
         elif angle == 90:
-            print('rotate 90')
             return -v_band, u_band
         elif angle == 180:
-            print('rotate 180')
             return -u_band, -v_band
         else:
-            print('rotate 270')
             return v_band, -u_band
 
     def __call__(self, image):
@@ -119,12 +116,10 @@ class RandomFlip:
         flip = random.choice(['none', 'horizontal', 'vertical', 'both'])
 
         if flip in ['horizontal', 'both']:
-            print('flipping horizontally')
             image_clone = torch.flip(image_clone, [2])  # Flip along width
             image_clone[self.u_wind_index, :, :] *= -1  # Flip wind component
 
         if flip in ['vertical', 'both']:
-            print('flipping vertically')
             image_clone = torch.flip(image_clone, [1])  # Flip along height
             image_clone[self.v_wind_index, :, :] *= -1  # Flip wind component
 
