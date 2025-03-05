@@ -783,3 +783,92 @@ class UNet_v3(L.LightningModule):
                 {"Train Loss": train_loss, "Validation Loss": val_loss},
                 self.current_epoch
             )
+
+
+class FCN_v1(L.LightningModule):
+    def __init__(self, in_channels, out_channels, lr, loss_fn, 
+                 weight_decay, base_channels=64, num_layers=2):
+        super(FCN_v1, self).__init__()
+        self.lr = lr
+        self.loss_fn = loss_fn
+        self.weight_decay = weight_decay
+        self.num_layers = num_layers
+        self.out_channels = out_channels
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, 32, kernel_size=3, stride=1, padding='valid'),
+            nn.BatchNorm2d(num_features=32),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding='valid'),
+            nn.BatchNorm2d(num_features=32),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding='valid'),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding='valid'),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding='valid'),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace = True),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding='valid'),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace = True),
+        )
+
+        self.out = nn.Conv2d(128, out_channels, kernel_size = 1)
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Iterate over all modules in this block
+        for m in self.modules():
+            # Initialize Conv2d and ConvTranspose2d layers
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            # Initialize BatchNorm2d layers
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        return self.out(self.conv(x))
+
+    def training_step(self, batch, _):
+        input_bands, true_pm25 = batch
+        
+        pred_pm25 = self(input_bands)
+
+        true_pm25_cropped = F.center_crop(true_pm25, pred_pm25.shape[-1])
+        loss = self.loss_fn(pred_pm25, true_pm25_cropped)
+
+        self.log("train_loss", loss, on_epoch=True)
+        return loss
+    
+    def validation_step(self, batch, _):
+        input_bands, true_pm25 = batch
+        
+        pred_pm25 = self(input_bands)
+
+        true_pm25_cropped = F.center_crop(true_pm25, pred_pm25.shape[-1])
+        loss = self.loss_fn(pred_pm25, true_pm25_cropped)
+            
+        self.log("val_loss", loss, on_epoch=True)
+    
+    def configure_optimizers(self):
+        optimizer = optim.Adam(
+            self.parameters(), 
+            lr=self.lr
+        )
+        return optimizer
+    
+    def on_train_epoch_end(self):
+        train_loss = self.trainer.callback_metrics.get("train_loss_epoch")
+        val_loss = self.trainer.callback_metrics.get("val_loss")
+
+        if train_loss is not None and val_loss is not None:
+            self.logger.experiment.add_scalars(
+                "Losses",
+                {"Train Loss": train_loss, "Validation Loss": val_loss},
+                self.current_epoch
+            )
