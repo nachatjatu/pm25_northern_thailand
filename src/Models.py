@@ -17,7 +17,7 @@ class Persistence(L.LightningModule):
             vars = torch.ones_like(means)
             return means, vars
 
-        return torch.zeros(x.shape[0], self.out_channels, x.shape[2], x.shape[3], device=x.device)
+        return torch.zeros(x.shape[0], self.out_channels, 88, 88, device=x.device)
     
     def validation_step(self, batch, _):
         input_bands, true_pm25 = batch
@@ -28,9 +28,9 @@ class Persistence(L.LightningModule):
             true_pm25_cropped = F.center_crop(true_pm25, 88)
             loss = self.loss_fn(means, true_pm25_cropped, vars)
         else:  
-            loss = self.loss_fn(pred_pm25, true_pm25)
+            true_pm25_cropped = F.center_crop(true_pm25, 88)
+            loss = self.loss_fn(pred_pm25, true_pm25_cropped)
         
-        print(loss)
         self.log("val_loss", loss, on_epoch=True)
 
 
