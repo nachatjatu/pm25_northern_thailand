@@ -63,7 +63,7 @@ class PM25DataModule(L.LightningDataModule):
             select_indices=self.select_indices
         )
         self.val_dataset = PM25Dataset(
-            path=os.path.join(self.root, 'train'), 
+            path=os.path.join(self.root, 'val'), 
             transform=self.val_transform,
             select_indices=self.select_indices
         )
