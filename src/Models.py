@@ -714,14 +714,11 @@ class UNet_v3(L.LightningModule):
         for down_block in self.down_blocks:
             x_conv, x = down_block(x)
             skip_connections.append(x_conv)
-            print(x.shape)
 
         x = self.bottleneck(x)
-        print(x.shape)
 
         for up_block, skip in zip(self.up_blocks, reversed(skip_connections)):
             x = up_block(x, skip)
-            print(x.shape)
 
         x = self.out(x)
 
