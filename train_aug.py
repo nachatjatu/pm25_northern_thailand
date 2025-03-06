@@ -30,9 +30,8 @@ def main(args):
     )
 
     # set up data and transformations
-    band_indices = [0, 1, 2, 3, 4, 5, 7, 8, 9]
-    std_indices = [0, 1, 2, 8, 9]
-    norm_indices = [3, 4, 5, 6, 7]
+    std_indices = [0, 1, 2, 3, 4, 5, 8, 9]
+    norm_indices = [6, 7]
 
     means, stds, mins, maxs = src.Utils.init_norm_std(args)
     print('Means:\n', means)
@@ -64,7 +63,6 @@ def main(args):
         val_transform=val_transform,
         test_transform=test_transform,
         collate_fn=src.Utils.collate_fn,
-        select_indices=band_indices
     )
 
     # set up model
