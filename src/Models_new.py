@@ -33,12 +33,12 @@ class UNet_v5(L.LightningModule):
             param.requires_grad = False
 
     def unfreeze_encoder(self):
-        mobilenet_blocks = self.model.encoder.blocks  # Get list of MobileNet blocks
+        mobilenet_layers = list(self.model.encoder.features)  # Access MobileNetV2 feature layers
 
-        if self.current_unfreeze_step < len(mobilenet_blocks):
-            for param in mobilenet_blocks[self.current_unfreeze_step].parameters():
+        if self.current_unfreeze_step < len(mobilenet_layers):
+            for param in mobilenet_layers[self.current_unfreeze_step].parameters():
                 param.requires_grad = True
-            print(f"Unfreezing MobileNet Block {self.current_unfreeze_step + 1}")
+            print(f"Unfreezing MobileNet Feature Block {self.current_unfreeze_step + 1}")
             self.current_unfreeze_step += 1
 
     def forward(self, x):
