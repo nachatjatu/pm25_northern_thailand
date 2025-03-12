@@ -34,7 +34,6 @@ class UNet_v5(L.LightningModule):
 
     def unfreeze_encoder(self):
         layers = [
-            self.model.encoder.layer3,
             self.model.encoder.layer2,
             self.model.encoder.layer1,  # Shallowest
         ]
