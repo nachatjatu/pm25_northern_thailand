@@ -21,7 +21,7 @@ class UNet_v5(L.LightningModule):
         self.lr = lr
         self.weight_decay = weight_decay
 
-        self.criterion = nn.L1Loss()
+        self.criterion = nn.MSELoss()
         self.unfreeze_epoch = unfreeze_epoch  # Epoch at which to start unfreezing
         self.current_unfreeze_step = 0  # Track the number of layers unfrozen
 
@@ -33,16 +33,13 @@ class UNet_v5(L.LightningModule):
             param.requires_grad = False
 
     def unfreeze_encoder(self):
-        layers = [
-            self.model.encoder.layer2,
-            self.model.encoder.layer1,  # Shallowest
-        ]
+        mobilenet_blocks = self.model.encoder.blocks  # Get list of MobileNet blocks
 
-        if self.current_unfreeze_step < len(layers):
-            for param in layers[self.current_unfreeze_step].parameters():
+        if self.current_unfreeze_step < len(mobilenet_blocks):
+            for param in mobilenet_blocks[self.current_unfreeze_step].parameters():
                 param.requires_grad = True
-            print(f"Unfreezing Layer {self.current_unfreeze_step + 1}")
-            self.current_unfreeze_step += 1  # Move to the next layer
+            print(f"Unfreezing MobileNet Block {self.current_unfreeze_step + 1}")
+            self.current_unfreeze_step += 1
 
     def forward(self, x):
         return self.model(x)
