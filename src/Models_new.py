@@ -14,8 +14,8 @@ class UNet_v5(L.LightningModule):
             in_channels=in_channels,  
             classes=1,  
             activation=None,
-            encoder_depth=3,
-            decoder_channels=(128, 64, 32),
+            encoder_depth=2,
+            decoder_channels=(64, 32),
             decoder_attention_type='scse'
         )
 
