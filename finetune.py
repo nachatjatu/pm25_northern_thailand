@@ -27,8 +27,6 @@ def main(args):
         logger=logger,
         callbacks=callbacks,
         gradient_clip_val=1,
-        limit_val_batches=5,
-        limit_train_batches=5
     )
 
     # set up data and transformations
